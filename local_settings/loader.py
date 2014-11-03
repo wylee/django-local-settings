@@ -10,8 +10,8 @@ from .util import NO_DEFAULT
 
 class Loader(Base):
 
-    def __init__(self, file_name=None):
-        super(Loader, self).__init__(file_name)
+    def __init__(self, file_name=None, section=None, extends=None):
+        super(Loader, self).__init__(file_name, section, extends)
         if not os.path.exists(self.file_name):
             msg = 'Local settings file "{0}" does not exist'
             msg = msg.format(file_name)
@@ -19,18 +19,18 @@ class Loader(Base):
         # Registry of local settings with a value in the settings file
         self.registry = {}
 
-    def read_file(self, section='DEFAULT'):
+    def read_file(self):
         """Read settings from specified ``section`` of config file."""
         parser = self._make_parser()
         with open(self.file_name) as fp:
             parser.read_file(fp)
-        extends = parser[section].get('extends', None)
+        extends = parser[self.section].get('extends', None)
         if extends:
             extends = self._parse_setting(extends)
-            settings = self.__class__(extends).read_file()
+            settings = self.__class__(extends, extends=self).read_file()
         else:
             settings = {}
-        settings.update(parser[section])
+        settings.update(parser[self.section])
         return settings
 
     def load(self, base_settings):

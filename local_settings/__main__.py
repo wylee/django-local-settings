@@ -19,6 +19,9 @@ def make_local_settings(argv=None):
     parser.add_argument(
         '-f', '--file-name', default=None,
         help='Name of file to write settings into')
+    parser.add_argument(
+        '-s', '--section', default=None,
+        help='Section to read/write settings from/to (default = <env>)')
     parser.add_argument('-o', '--overwrite', action='store_true', default=False)
 
     args = parser.parse_args(argv)
@@ -36,20 +39,29 @@ def make_local_settings(argv=None):
     base_settings = vars(module)
 
     if args.file_name is None:
-        args.file_name = 'local.{0.env}.cfg'.format(args)
-    file_name = os.path.normpath(os.path.abspath(args.file_name))
+        file_name = 'local.{0.env}.cfg'.format(args)
+        section = args.env
+    elif '#' in args.file_name:
+        file_name, section = args.file_name.rsplit('#', 1)
+
+    file_name = os.path.normpath(os.path.abspath(file_name))
+
+    if args.section:
+        section = args.section
+
     registry = None
+
     if os.path.exists(file_name):
         if args.overwrite:
             print('Overwriting {0.file_name}'.format(args))
             with open(file_name, 'w'):
                 pass
         else:
-            loader = Loader(file_name)
+            loader = Loader(file_name, section)
             loader.load(base_settings)
             registry = loader.registry
 
-    checker = Checker(file_name, registry)
+    checker = Checker(file_name, section, registry=registry)
     try:
         checker.check(base_settings)
     except KeyboardInterrupt:

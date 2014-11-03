@@ -14,8 +14,8 @@ from .util import NO_DEFAULT
 
 class Checker(Base):
 
-    def __init__(self, file_name=None, registry=None):
-        super(Checker, self).__init__(file_name)
+    def __init__(self, file_name=None, section=None, extends=None, registry=None):
+        super(Checker, self).__init__(file_name, section, extends)
         if registry is None:
             registry = {}
         self.registry = registry
@@ -151,11 +151,14 @@ class Checker(Base):
             self.print_info(
                 'Creating new local settings file: `{0.file_name}`'
                 .format(self))
+        if self.section not in parser:
+            self.print_info('Adding new section: `{0.section}`'.format(self))
+            parser.add_section(self.section)
         sorted_keys = sorted(settings.keys())
         for name in sorted_keys:
             value = json.dumps(settings[name])
             settings[name] = value
-            parser['DEFAULT'][name] = value
+            parser[self.section][name] = value
         with open(self.file_name, 'w') as fp:
             parser.write(fp)
         for name in sorted_keys:

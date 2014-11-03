@@ -10,7 +10,8 @@ from .util import get_file_name
 from .__main__ import make_local_settings
 
 
-def load_and_check_settings(base_settings,  file_name=None, base_path=None):
+def load_and_check_settings(base_settings,  file_name=None, section=None,
+                            base_path=None):
     """Load settings from file into base settings, then check settings.
 
     Settings loaded from the specified file will override base settings,
@@ -47,12 +48,12 @@ def load_and_check_settings(base_settings,  file_name=None, base_path=None):
             file_name = os.path.normpath(os.path.join(base_path, file_name))
     try:
         if os.path.exists(file_name):
-            loader = Loader(file_name)
+            loader = Loader(file_name, section)
             loader.load(base_settings)
             registry = loader.registry
         else:
             registry = None
-        checker = Checker(file_name, registry)
+        checker = Checker(file_name, section, registry=registry)
         success = checker.check(base_settings)
     except KeyboardInterrupt:
         # Loading/checking of local settings was aborted with Ctrl-C.
