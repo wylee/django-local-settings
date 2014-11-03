@@ -26,7 +26,7 @@ class Loader(Base):
             parser.read_file(fp)
         extends = parser[self.section].get('extends', None)
         if extends:
-            extends = self._parse_setting(extends)
+            extends = self._parse_setting(extends, expand_vars=True)
             settings = self.__class__(extends, extends=self).read_file()
         else:
             settings = {}
@@ -41,7 +41,7 @@ class Loader(Base):
             return
         for k, v in self.read_file().items():
             names = k.split('.')
-            v = self._parse_setting(v)
+            v = self._parse_setting(v, expand_vars=True)
             obj = base_settings
             for i, name in enumerate(names[:-1], 1):
                 name = self._convert_name(name)
