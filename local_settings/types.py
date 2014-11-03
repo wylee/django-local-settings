@@ -18,7 +18,7 @@ class LocalSetting(object):
 
     """
 
-    def __init__(self, default=NO_DEFAULT, prompt=True, doc=None):
+    def __init__(self, default=NO_DEFAULT, prompt=True, doc=None, validator=None):
         self.default = default
         self.derived_default = False
         if default is not NO_DEFAULT:
@@ -34,6 +34,7 @@ class LocalSetting(object):
                     raise TypeError(msg)
         self.prompt = prompt
         self.doc = doc
+        self.validator = validator
         self.value = NO_DEFAULT
 
     @property
@@ -52,6 +53,11 @@ class LocalSetting(object):
             raise NoDefaultError('Local setting has no default value')
         return default
 
+    def validate(self, v):
+        if self.validator:
+            return self.validator(v)
+        return True
+
 
 class SecretSetting(LocalSetting):
 
@@ -63,5 +69,5 @@ class SecretSetting(LocalSetting):
 
     """
 
-    def __init__(self, doc=None):
-        super(SecretSetting, self).__init__(NO_DEFAULT, True, doc)
+    def __init__(self, doc=None, validator=None):
+        super(SecretSetting, self).__init__(NO_DEFAULT, True, doc, validator)

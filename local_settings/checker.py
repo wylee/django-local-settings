@@ -133,7 +133,9 @@ class Checker(Base):
                 except ValueError as e:
                     self.print_error(e)
                 else:
-                    is_set = True
+                    is_set = local_setting.validate(v)
+                    if not is_set:
+                        self.print_error('`{0}` is not a valid value for {1}'.format(v, name))
             elif local_setting.has_default:
                 v, is_set = local_setting.get_default(), True
                 self.print_info('Using default value for `{0}`'.format(name))
