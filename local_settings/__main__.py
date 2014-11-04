@@ -30,7 +30,7 @@ def make_local_settings(argv=None):
     if args.base_settings_module is None:
         dist = next(find_distributions('.', only=True), None)
         if dist is not None:
-            args.base_settings_module = '{0.project_name}.settings.base'.format(dist)
+            args.base_settings_module = '{0.project_name}.settings'.format(dist)
         else:
             msg = 'Could not guess which base settings module to use; specify with -b'
             parser.exit(1, msg)
