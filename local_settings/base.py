@@ -45,6 +45,11 @@ class Base(ColorPrinter):
         else:
             parsed_section = None
 
+        if extender and not os.path.isabs(file_name):
+            # When a file is extended by another (the "extender"),
+            # ensure that the path to the extended file is correct.
+            file_name = os.path.join(os.path.dirname(extender.file_name), file_name)
+
         if section:
             pass
         elif parsed_section:
