@@ -10,8 +10,8 @@ from .util import NO_DEFAULT
 
 class Loader(Base):
 
-    def __init__(self, file_name=None, section=None, extends=None):
-        super(Loader, self).__init__(file_name, section, extends)
+    def __init__(self, file_name=None, section=None, extender=None):
+        super(Loader, self).__init__(file_name, section, extender)
         if not os.path.exists(self.file_name):
             msg = 'Local settings file "{0}" does not exist'
             msg = msg.format(file_name)
@@ -27,7 +27,7 @@ class Loader(Base):
         extends = parser[self.section].get('extends', None)
         if extends:
             extends = self._parse_setting(extends, expand_vars=True)
-            settings = self.__class__(extends, extends=self).read_file()
+            settings = self.__class__(extends, extender=self).read_file()
         else:
             settings = {}
         settings.update(parser[self.section])

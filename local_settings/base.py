@@ -11,7 +11,7 @@ from .util import get_file_name
 
 class Base(ColorPrinter):
 
-    def __init__(self, file_name=None, section=None, extends=None, colors=None):
+    def __init__(self, file_name=None, section=None, extender=None, colors=None):
         """Initialize config file name and section.
 
         The file name will be selected from the following list, in order
@@ -49,8 +49,8 @@ class Base(ColorPrinter):
             pass
         elif parsed_section:
             section = parsed_section
-        elif extends:
-            section = extends.section
+        elif extender:
+            section = extender.section
         else:
             parser = self._make_parser()
             with open(file_name) as fp:

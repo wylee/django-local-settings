@@ -14,8 +14,8 @@ from .util import NO_DEFAULT
 
 class Checker(Base):
 
-    def __init__(self, file_name=None, section=None, extends=None, registry=None):
-        super(Checker, self).__init__(file_name, section, extends)
+    def __init__(self, file_name=None, section=None, extender=None, registry=None):
+        super(Checker, self).__init__(file_name, section, extender)
         if registry is None:
             registry = {}
         self.registry = registry
