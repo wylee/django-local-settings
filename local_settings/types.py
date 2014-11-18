@@ -45,13 +45,18 @@ class LocalSetting(object):
     def has_value(self):
         return self.value is not NO_DEFAULT
 
-    def get_default(self):
-        default = self.default
+    @property
+    def default(self):
+        default = self._default
         if isinstance(default, LocalSetting):
             default = default.value
         if default is NO_DEFAULT:
             raise NoDefaultError('Local setting has no default value')
         return default
+
+    @default.setter
+    def default(self, default):
+        self._default = default
 
     def validate(self, v):
         if self.validator:

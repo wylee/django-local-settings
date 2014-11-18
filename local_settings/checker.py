@@ -86,7 +86,7 @@ class Checker(Base):
                     default = local_setting.default
                     default_name = self.registry[default]
                     try:
-                        local_setting.get_default()
+                        local_setting.has_default
                     except NoDefaultError:
                         self._check({default_name: default}, None, settings_to_write, missing)
 
@@ -97,7 +97,7 @@ class Checker(Base):
                     if self.on_a_tty:
                         v, is_set = self.prompt_for_value(name, v)
                 elif local_setting.has_default:  # use default w/o prompting
-                    v, is_set = local_setting.get_default(), True
+                    v, is_set = local_setting.default, True
                     msg = (
                         'Using default value `{value!r}` for local setting '
                         '`{name}`'.format(name=name, value=v))
@@ -121,7 +121,7 @@ class Checker(Base):
             if local_setting.doc:
                 self.print_header('Doc:', local_setting.doc)
             if local_setting.has_default:
-                msg = 'Hit enter to use default: `{0!r}`'.format(local_setting.get_default())
+                msg = 'Hit enter to use default: `{0!r}`'.format(local_setting.default)
                 if local_setting.derived_default:
                     default_name = self.registry[local_setting.default]
                     msg += ' (derived from {0})'.format(default_name)
@@ -137,7 +137,7 @@ class Checker(Base):
                     if not is_set:
                         self.print_error('`{0}` is not a valid value for {1}'.format(v, name))
             elif local_setting.has_default:
-                v, is_set = local_setting.get_default(), True
+                v, is_set = local_setting.default, True
                 self.print_info('Using default value for `{0}`'.format(name))
             else:
                 self.print_error(
