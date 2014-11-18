@@ -7,7 +7,6 @@ from six import string_types
 from six.moves import input
 
 from .base import Base
-from .exc import NoDefaultError
 from .types import LocalSetting
 from .util import NO_DEFAULT
 
@@ -85,9 +84,7 @@ class Checker(Base):
                     # Ensure this setting's default is set if it's also a local setting
                     default = local_setting.default
                     default_name = self.registry[default]
-                    try:
-                        local_setting.has_default
-                    except NoDefaultError:
+                    if not local_setting.has_default:
                         self._check({default_name: default}, None, settings_to_write, missing)
 
                 if self.on_a_tty:
