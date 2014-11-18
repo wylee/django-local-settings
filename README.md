@@ -15,14 +15,14 @@ The problems with local settings are:
 - How to ensure local (and esp. secret) settings don't get added to version control
 
 One common approach is to create a local settings template module with dummy/default values. When
-new developers start working on a project, they copy this file (e.g. local_settings.py.template =>
-local_settings.py), which is typically excluded from version control. This approach at least
+new developers start working on a project, they copy this file (e.g., `local_settings.py.template =>
+local_settings.py`), which is typically excluded from version control. This approach at least
 identifies which settings are local, but it's not very convenient with regard to setting values and
 ensuring those values are valid. Also, instead of giving you a friendly heads-up when you forget to
-set local setting, it barfs out an exception.
+set a local setting, it barfs out an exception.
 
 This package takes the approach that there will be only one settings *module* per project in the
-standard location: {project}.settings. That module defines/overrides Django's base settings in the
+standard location: `{project}.settings`. That module defines/overrides Django's base settings in the
 usual way *plus* it defines which settings are local and which are secret.
 
 In addition to the settings module, there will be one or more settings *files*. These are standard
@@ -31,7 +31,7 @@ a simple, standard config file format while still allowing for easy handling of 
 
 TODO: Maybe add support for different config file format (e.g., YAML)?
 
-Once the local settings are defined, any *missing settings will be prompted for in the console*
+Once the local settings are defined, *any missing settings will be prompted for in the console*
 (with pretty colors and readline support).
 
 ## Features
@@ -41,6 +41,8 @@ Once the local settings are defined, any *missing settings will be prompted for 
 - Local settings can be defined with doc strings
 - Local settings can be nested in settings lists and dicts
 - Settings files can extend from each other
+- Includes a script to easily generate local settings files for different environments
+- Supports Python 2.6 - 3.4 (using [six](http://pythonhosted.org/six/))
 
 ## Basic usage
 
@@ -66,7 +68,7 @@ Once the local settings are defined, any *missing settings will be prompted for 
 
         load_and_check_settings(globals())
     
-    When this line runs, it will load local settings from a file ($CWD/local.cfg by default) and
+    When this line runs, it will load local settings from a file (`$CWD/local.cfg` by default) and
     prompt for any that are missing. When not running on a TTY/console, missing local settings will
     cause an exception to be raised.
     
@@ -78,9 +80,10 @@ Once the local settings are defined, any *missing settings will be prompted for 
   settings. On the first run, the settings file will be created. On subsequent runs when new local
   settings are added to the settings module, the settings file will be appended to.
   
-- Alternatively, you can run the make-local-settings script to generate a local settings file.
+- Alternatively, you can run the included `make-local-settings` script to generate a local settings
+  file.
 
 ## Advanced usage
 
 TODO: Discuss using multiple settings files, extending a settings file from another file, how to
-specify a settings file other than the default of local.cfg, editing settings files directly, &c.
+specify a settings file other than the default of `local.cfg`, editing settings files directly, &c.
