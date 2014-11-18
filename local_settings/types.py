@@ -35,7 +35,7 @@ class LocalSetting(object):
         self.prompt = prompt
         self.doc = doc
         self.validator = validator
-        self.value = NO_DEFAULT
+        self._value = NO_DEFAULT
 
     @property
     def has_default(self):
@@ -73,6 +73,8 @@ class LocalSetting(object):
 
     @value.setter
     def value(self, value):
+        if not self.validate(value):
+            raise ValueError('`{0}` is not a valid value'.format(value))
         self._value = value
 
     def validate(self, v):
