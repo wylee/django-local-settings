@@ -1,6 +1,6 @@
 import json
 
-from .exc import NoDefaultError
+from .exc import NoDefaultError, NoValueError
 from .util import NO_DEFAULT
 
 
@@ -43,7 +43,7 @@ class LocalSetting(object):
 
     @property
     def has_value(self):
-        return self.value is not NO_DEFAULT
+        return self._value is not NO_DEFAULT or self.has_default
 
     def _get_default(self):
         default = self._default
@@ -61,6 +61,19 @@ class LocalSetting(object):
     @default.setter
     def default(self, default):
         self._default = default
+
+    @property
+    def value(self):
+        value = self._value
+        if value is NO_DEFAULT:
+            value = self._get_default()
+        if value is NO_DEFAULT:
+            raise NoValueError('Local setting has no value')
+        return value
+
+    @value.setter
+    def value(self, value):
+        self._value = value
 
     def validate(self, v):
         if self.validator:

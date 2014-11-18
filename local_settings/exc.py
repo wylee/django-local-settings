@@ -6,3 +6,8 @@ class LocalSettingsError(Exception):
 class NoDefaultError(LocalSettingsError):
 
     pass
+
+
+class NoValueError(LocalSettingsError):
+
+    pass
