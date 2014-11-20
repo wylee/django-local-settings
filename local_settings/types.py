@@ -25,6 +25,8 @@ class LocalSetting(object):
             if isinstance(default, LocalSetting):
                 self.derived_default = True
             else:
+                if callable(default):
+                    default = default()
                 try:
                     json.dumps(default)
                 except TypeError as exc:
@@ -49,6 +51,8 @@ class LocalSetting(object):
         default = self._default
         if isinstance(default, LocalSetting):
             default = default.value
+        elif callable(default):
+            default = default()
         return default
 
     @property

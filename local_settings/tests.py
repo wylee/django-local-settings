@@ -62,6 +62,10 @@ class TestLocalSetting(TestCase):
             setting.value = 'abc'
         setting.value = 123
 
+    def test_local_setting_with_callable_default(self):
+        setting = LocalSetting(default=lambda: 'pants')
+        self.assertEqual(setting.default, 'pants')
+
 
 class TestSecretSetting(TestCase):
 
