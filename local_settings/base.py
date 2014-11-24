@@ -58,10 +58,13 @@ class Base(ColorPrinter):
             package, path = file_name.split(':', 1)
             file_name = pkg_resources.resource_filename(package, path)
 
-        if extender and not os.path.isabs(file_name):
-            # When a file is extended by another (the "extender"),
-            # ensure that the path to the extended file is correct.
-            file_name = os.path.join(os.path.dirname(extender.file_name), file_name)
+        if extender:
+            if not file_name:
+                file_name = extender.file_name
+            elif not os.path.isabs(file_name):
+                # When a file is extended by another (the "extender"),
+                # ensure that the path to the extended file is correct.
+                file_name = os.path.join(os.path.dirname(extender.file_name), file_name)
 
         if section:
             pass
