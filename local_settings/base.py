@@ -1,5 +1,6 @@
 import json
 import os.path
+import pkg_resources
 from collections import Mapping, Sequence
 from configparser import ConfigParser
 
@@ -23,6 +24,14 @@ class Base(ColorPrinter):
             - Otherwise, local.cfg in the current working directory will
               be used
 
+        File names can take one of the following forms:
+
+            - Absolute
+            - Relative: When a file name is specified in a settings file
+              (i.e., via extends), it will be made absolute by
+              prepending the directory containing the settings file
+            - Asset spec: A string like '{package}:{path}`
+
         The section will be selected from the following list, in order
         of precedence:
 
@@ -44,6 +53,10 @@ class Base(ColorPrinter):
             file_name, parsed_section = file_name.rsplit('#', 1)
         else:
             parsed_section = None
+
+        if ':' in file_name:
+            package, path = file_name.split(':', 1)
+            file_name = pkg_resources.resource_filename(package, path)
 
         if extender and not os.path.isabs(file_name):
             # When a file is extended by another (the "extender"),
