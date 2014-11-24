@@ -25,11 +25,13 @@ class Loader(Base):
         with open(self.file_name) as fp:
             parser.read_file(fp)
         extends = parser[self.section].get('extends', None)
+        settings = {}
         if extends:
             extends = self._parse_setting(extends, expand_vars=True)
-            settings = self.__class__(extends, extender=self).read_file()
-        else:
-            settings = {}
+            if isinstance(extends, str):
+                extends = [extends]
+            for e in extends:
+                settings.update(self.__class__(e, extender=self).read_file())
         settings.update(parser[self.section])
         return settings
 
