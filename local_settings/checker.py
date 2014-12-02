@@ -80,12 +80,13 @@ class Checker(Base):
                 is_set = False
                 local_setting = v
 
-                if isinstance(local_setting.default, LocalSetting):
+                if local_setting.derived_default:
                     # Ensure this setting's default is set if it's also a local setting
-                    default = local_setting.default
-                    default_name = self.registry[default]
+                    default_name = self.registry[local_setting.derived_default]
                     if not local_setting.has_default:
-                        self._check({default_name: default}, None, settings_to_write, missing)
+                        self._check(
+                            {default_name: local_setting.derived_default},
+                            None, settings_to_write, missing)
 
                 if self.on_a_tty:
                     self.print_header('=' * 79)
@@ -120,7 +121,7 @@ class Checker(Base):
             if local_setting.has_default:
                 msg = 'Hit enter to use default: `{0!r}`'.format(local_setting.default)
                 if local_setting.derived_default:
-                    default_name = self.registry[local_setting.default]
+                    default_name = self.registry[local_setting.derived_default]
                     msg += ' (derived from {0})'.format(default_name)
                 self.print_header(msg)
             v = input('> ').strip()

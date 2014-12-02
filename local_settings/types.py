@@ -20,10 +20,10 @@ class LocalSetting(object):
 
     def __init__(self, default=NO_DEFAULT, prompt=True, doc=None, validator=None):
         self.default = default
-        self.derived_default = False
+        self.derived_default = NO_DEFAULT
         if default is not NO_DEFAULT:
             if isinstance(default, LocalSetting):
-                self.derived_default = True
+                self.derived_default = default
             else:
                 if callable(default):
                     default = default()
@@ -48,11 +48,12 @@ class LocalSetting(object):
         return self._value is not NO_DEFAULT or self.has_default
 
     def _get_default(self):
-        default = self._default
-        if isinstance(default, LocalSetting):
-            default = default.value
-        elif callable(default):
-            default = default()
+        if self.derived_default:
+            default = self.derived_default.value
+        else:
+            default = self._default
+            if callable(default):
+                default = default()
         return default
 
     @property
