@@ -43,6 +43,9 @@ def make_local_settings(argv=None):
         section = args.env
     elif '#' in args.file_name:
         file_name, section = args.file_name.rsplit('#', 1)
+    else:
+        file_name = args.file_name
+        section = args.env
 
     file_name = os.path.normpath(os.path.abspath(file_name))
 
