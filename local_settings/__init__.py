@@ -3,7 +3,7 @@ import sys
 
 from .color_printer import ColorPrinter
 from .checker import Checker
-from .exc import LocalSettingsError
+from .exc import LocalSettingsError, SettingsFileNotFoundError
 from .loader import Loader
 from .types import LocalSetting, SecretSetting
 from .util import get_file_name
@@ -47,11 +47,11 @@ def load_and_check_settings(base_settings,  file_name=None, section=None,
             base_path = base_path or os.getcwd()
             file_name = os.path.normpath(os.path.join(base_path, file_name))
     try:
-        if os.path.exists(file_name):
+        try:
             loader = Loader(file_name, section)
             loader.load(base_settings)
             registry = loader.registry
-        else:
+        except SettingsFileNotFoundError:
             registry = None
         checker = Checker(file_name, section, registry=registry)
         success = checker.check(base_settings)
