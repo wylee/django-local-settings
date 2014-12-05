@@ -3,7 +3,7 @@ import re
 from collections import Mapping, Sequence
 
 from .base import Base
-from .exc import LocalSettingsError
+from .exc import SettingsFileNotFoundError
 from .types import LocalSetting
 from .util import NO_DEFAULT
 
@@ -13,9 +13,7 @@ class Loader(Base):
     def __init__(self, file_name=None, section=None, extender=None):
         super(Loader, self).__init__(file_name, section, extender)
         if not os.path.exists(self.file_name):
-            msg = 'Local settings file "{0}" does not exist'
-            msg = msg.format(file_name)
-            raise LocalSettingsError(msg)
+            raise SettingsFileNotFoundError(file_name)
         # Registry of local settings with a value in the settings file
         self.registry = {}
 
