@@ -77,10 +77,7 @@ class Base(ColorPrinter):
             with open(file_name) as fp:
                 parser.read_file(fp)
             sections = parser.sections()
-            if len(sections) == 1:
-                section = sections[0]
-            else:
-                section = 'DEFAULT'
+            section = sections[0] if len(sections) > 0 else 'DEFAULT'
 
         self.file_name = file_name
         self.section = section
