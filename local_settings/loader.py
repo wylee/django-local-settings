@@ -2,6 +2,8 @@ import os
 import re
 from collections import Mapping, Sequence
 
+from six import string_types
+
 from .base import Base
 from .exc import SettingsFileNotFoundError
 from .types import LocalSetting
@@ -82,6 +84,18 @@ class Loader(Base):
                     curr_v.value = v
                     self.registry[curr_v] = name
             obj[name] = v
+        self._do_interpolation(base_settings, base_settings)
+
+    def _do_interpolation(self, v, settings):
+        if isinstance(v, string_types):
+            v = v.format(**settings)
+        elif isinstance(v, Mapping):
+            for k in v:
+                v[k] = self._do_interpolation(v[k], settings)
+        elif isinstance(v, Sequence):
+            for i, item in enumerate(v):
+                v[i] = self._do_interpolation(item, settings)
+        return v
 
     def _convert_name(self, name):
         """Convert ``name`` to int if it looks like an int.
