@@ -14,7 +14,7 @@ class TestUtil(TestCase):
     def test_default_file_name(self):
         os.environ.pop('LOCAL_SETTINGS_FILE', None)
         file_name = get_file_name()
-        self.assertEqual(file_name, 'local.cfg')
+        self.assertEqual(os.path.basename(file_name), 'local.cfg')
 
     def test_set_file_name_via_environ(self):
         os.environ['LOCAL_SETTINGS_FILE'] = 'pants.cfg'

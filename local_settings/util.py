@@ -17,5 +17,5 @@ def get_file_name():
     # to worry about the order of imports.
     file_name = os.environ.get('LOCAL_SETTINGS_FILE')
     if not file_name:
-        file_name = 'local.cfg'
+        file_name = os.path.join(os.getcwd(), 'local.cfg')
     return file_name
