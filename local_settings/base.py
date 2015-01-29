@@ -39,8 +39,7 @@ class Base(ColorPrinter):
             - Section passed via file name (using file_name#section
               syntax)
             - The section that's being extended, if applicable
-            - The only section in the file, *iff* there's exactly one
-              section
+            - The first section in the file
             - [DEFAULT]
 
         """
