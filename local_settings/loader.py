@@ -93,8 +93,7 @@ class Loader(Base):
             for k in v:
                 v[k] = self._do_interpolation(v[k], settings)
         elif isinstance(v, Sequence):
-            for i, item in enumerate(v):
-                v[i] = self._do_interpolation(item, settings)
+            v = v.__class__(self._do_interpolation(item, settings) for item in v)
         return v
 
     def _convert_name(self, name):
