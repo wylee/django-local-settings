@@ -18,7 +18,7 @@ if VERSION < (2, 7):
 
 setup(
     name='django-local-settings',
-    version='0.0.0.dev0',
+    version='1.0a1',
     author='Wyatt Baldwin',
     author_email='wyatt.baldwin@pdx.edu',
     packages=find_packages(),
