@@ -25,6 +25,7 @@ setup(
     version='1.0a1',
     author='Wyatt Baldwin',
     author_email='wyatt.baldwin@pdx.edu',
+    url='https://github.com/PSU-OIT-ARC/django-local-settings',
     description='A system for dealing with local settings in Django projects',
     long_description=long_description,
     packages=find_packages(),
