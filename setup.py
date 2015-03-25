@@ -6,6 +6,10 @@ from setuptools import find_packages, setup
 VERSION = sys.version_info[:2]
 
 
+with open('README.md') as fp:
+    long_description = fp.read()
+
+
 install_requires = [
     'six',
 ]
@@ -21,6 +25,8 @@ setup(
     version='1.0a1',
     author='Wyatt Baldwin',
     author_email='wyatt.baldwin@pdx.edu',
+    description='A system for dealing with local settings in Django projects',
+    long_description=long_description,
     packages=find_packages(),
     install_requires=install_requires,
     classifiers=[
