@@ -3,9 +3,6 @@ import sys
 from setuptools import find_packages, setup
 
 
-VERSION = sys.version_info[:2]
-
-
 with open('README.md') as fp:
     long_description = fp.read()
 
@@ -13,7 +10,7 @@ with open('README.md') as fp:
 install_requires = [
     'six',
 ]
-if VERSION < (2, 7):
+if sys.version_info[:2] < (2, 7):
     install_requires += [
         'argparse',
         'configparser',
