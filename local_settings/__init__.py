@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 
@@ -6,12 +7,12 @@ from .checker import Checker
 from .exc import LocalSettingsError, SettingsFileNotFoundError
 from .loader import Loader
 from .types import LocalSetting, SecretSetting
-from .util import get_file_name
+from .util import NO_DEFAULT, get_file_name
 from .__main__ import make_local_settings
 
 
-def load_and_check_settings(base_settings,  file_name=None, section=None,
-                            base_path=None):
+def load_and_check_settings(base_settings,  file_name=None, section=None, base_path=None,
+                            quiet=NO_DEFAULT):
     """Load settings from file into base settings, then check settings.
 
     Settings loaded from the specified file will override base settings,
@@ -31,14 +32,22 @@ def load_and_check_settings(base_settings,  file_name=None, section=None,
     ``base_path`` is used when ``file_name`` is relative; if it's not
     passed, it will be set to the current working directory.
 
+    When ``quiet`` is ``True``, informational messages will not be
+    printed. The ``LOCAL_SETTINGS_CONFIG_QUIET`` can be used to set
+    ``quiet`` (use a JSON value like 'true', '1', 'false', or '0').
+
     See :meth:`.Loader.load` and :meth:`.Checker.check` for more info.
 
     """
-    printer = ColorPrinter()
+    if quiet is NO_DEFAULT:
+        quiet = json.loads(os.environ.get('LOCAL_SETTINGS_CONFIG_QUIET', 'false'))
+    if not quiet:
+        printer = ColorPrinter()
     key = 'DISABLE_LOCAL_SETTINGS'
     disable_local_settings = os.environ.get(key, base_settings.get(key, False))
     if disable_local_settings:
-        printer.print_warning('Loading of local settings disabled')
+        if not quiet:
+            printer.print_warning('Loading of local settings disabled')
         return
     else:
         if file_name is None:
@@ -58,10 +67,12 @@ def load_and_check_settings(base_settings,  file_name=None, section=None,
     except KeyboardInterrupt:
         # Loading/checking of local settings was aborted with Ctrl-C.
         # This isn't an error, but we don't want to continue.
-        printer.print_warning('\nAborted loading/checking of local settings')
+        if not quiet:
+            printer.print_warning('\nAborted loading/checking of local settings')
         sys.exit(0)
     if success:
-        printer.print_success('Settings loaded successfully from {0}'.format(file_name))
+        if not quiet:
+            printer.print_success('Settings loaded successfully from {0}'.format(file_name))
     else:
         raise LocalSettingsError(
             'Could not load local settings from {0}'.format(file_name))
