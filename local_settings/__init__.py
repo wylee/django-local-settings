@@ -43,7 +43,7 @@ def load_and_check_settings(base_settings,  file_name=None, section=None, base_p
         quiet = json.loads(os.environ.get('LOCAL_SETTINGS_CONFIG_QUIET', 'false'))
     if not quiet:
         printer = ColorPrinter()
-    key = 'DISABLE_LOCAL_SETTINGS'
+    key = 'LOCAL_SETTINGS_DISABLE'
     disable_local_settings = os.environ.get(key, base_settings.get(key, False))
     if disable_local_settings:
         if not quiet:
