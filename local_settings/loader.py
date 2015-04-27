@@ -30,7 +30,7 @@ class Loader(Base):
             extends = self._parse_setting(extends, expand_vars=True)
             if isinstance(extends, str):
                 extends = [extends]
-            for e in extends:
+            for e in reversed(extends):
                 settings.update(self.__class__(e, extender=self).read_file())
         settings.update(parser[self.section])
         return settings
