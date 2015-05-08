@@ -19,7 +19,7 @@ if sys.version_info[:2] < (2, 7):
 
 setup(
     name='django-local-settings',
-    version='1.0a3',
+    version='1.0a4',
     author='Wyatt Baldwin',
     author_email='wyatt.baldwin@pdx.edu',
     url='https://github.com/PSU-OIT-ARC/django-local-settings',
