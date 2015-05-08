@@ -7,7 +7,7 @@ from six import string_types
 from .base import Base
 from .exc import SettingsFileNotFoundError
 from .types import LocalSetting
-from .util import NO_DEFAULT
+from .util import NO_DEFAULT as PLACEHOLDER
 
 
 class Loader(Base):
@@ -45,35 +45,20 @@ class Loader(Base):
             names = k.split('.')
             v = self._parse_setting(v, expand_vars=True)
             obj = base_settings
-            for i, name in enumerate(names[:-1], 1):
-                name = self._convert_name(name)
-                is_mapping = isinstance(obj, Mapping)
-                is_seq = isinstance(obj, Sequence)
-                # Look at next name to see if dict or list should be added
-                next_name = self._convert_name(names[i])
-                if isinstance(next_name, int):
-                    item = [NO_DEFAULT] * (next_name + 1)
-                else:
-                    item = {}
-                # If there's already a list in the current slot...
-                # If the existing list is longer, use it.
-                # If the new list is longer, copy the items from the
-                # existing list to the front of the new list.
-                if isinstance(item, Sequence):
-                    if is_mapping:
-                        curr_item = obj.get(name)
-                    elif is_seq:
-                        curr_item = obj[name] if name < len(obj) else None
-                    if isinstance(curr_item, Sequence):
-                        if len(curr_item) >= len(item):
-                            item = curr_item
-                        else:
-                            item[:len(curr_item)] = curr_item
-                if is_mapping:
-                    obj = obj.setdefault(name, item)
-                elif is_seq:
-                    obj[name] = item
-                    obj = obj[name]
+            for name, next_name in zip(names[:-1], names[1:]):
+                next_name = self._convert_name(next_name)
+                next_is_seq = isinstance(next_name, int)
+                default = [PLACEHOLDER] * (next_name + 1) if next_is_seq else {}
+                if isinstance(obj, Mapping):
+                    if name not in obj:
+                        obj[name] = default
+                elif isinstance(obj, Sequence):
+                    name = int(name)
+                    while name >= len(obj):
+                        obj.append(PLACEHOLDER)
+                    if obj[name] is PLACEHOLDER:
+                        obj[name] = default
+                obj = obj[name]
             name = self._convert_name(names[-1])
             try:
                 curr_v = obj[name]
