@@ -24,8 +24,8 @@ class Loader(Base):
         parser = self._make_parser()
         with open(self.file_name) as fp:
             parser.read_file(fp)
-        extends = parser[self.section].get('extends', None)
         settings = {}
+        extends = parser[self.section].pop('extends', None)
         if extends:
             extends = self._parse_setting(extends, expand_vars=True)
             if isinstance(extends, str):
