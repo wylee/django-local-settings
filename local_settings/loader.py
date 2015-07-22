@@ -24,7 +24,7 @@ class Loader(Base):
         parser = self._make_parser()
         with open(self.file_name) as fp:
             parser.read_file(fp)
-        extends = parser[self.section].pop('extends', None)
+        extends = parser[self.section].get('extends')
         settings = OrderedDict()
         if extends:
             extends = self._parse_setting(extends, expand_vars=True)
@@ -87,6 +87,7 @@ class Loader(Base):
                     self.registry[curr_v] = name
             obj[name] = v
             settings.move_to_end(names[0])
+        settings.pop('extends', None)
         self._do_interpolation(settings, settings)
         return settings
 
