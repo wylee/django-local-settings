@@ -56,7 +56,8 @@ class Loader(Base):
             self.print_warning(
                 'Local settings file `{0}` not found'.format(self.file_name))
             return
-        settings = OrderedDict((k, v) for (k, v) in base_settings.items())
+        is_upper = lambda k: k == k.upper()
+        settings = OrderedDict((k, v) for (k, v) in base_settings.items() if is_upper(k))
         for k, v in self.read_file().items():
             names = k.split('.')
             v = self._parse_setting(v, expand_vars=True)
