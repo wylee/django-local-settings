@@ -13,12 +13,20 @@ from .__main__ import make_local_settings
 
 def load_and_check_settings(base_settings,  file_name=None, section=None, base_path=None,
                             quiet=NO_DEFAULT):
-    """Load settings from file into base settings, then check settings.
+    """Merge local settings from file with base settings, then check.
+
+    Returns a new OrderedDict containing the base settings and the
+    loaded settings. Ordering is:
+
+        - base settings
+        - settings from extended file(s), if any
+        - settings from file
+
+    When a setting is overridden, it gets moved to the end.
 
     Settings loaded from the specified file will override base settings,
     then the settings will be checked to ensure that all required local
-    settings have been set. Note that this modifies ``base_settings`` in
-    place.
+    settings have been set.
 
     If a file name is passed: if the file exists, local settings will be
     loaded from it and any missing settings will be appended to it; if
@@ -58,21 +66,21 @@ def load_and_check_settings(base_settings,  file_name=None, section=None, base_p
     try:
         try:
             loader = Loader(file_name, section)
-            loader.load(base_settings)
+            settings = loader.load(base_settings)
             registry = loader.registry
         except SettingsFileNotFoundError:
             registry = None
         checker = Checker(file_name, section, registry=registry)
-        success = checker.check(base_settings)
+        success = checker.check(settings)
     except KeyboardInterrupt:
         # Loading/checking of local settings was aborted with Ctrl-C.
         # This isn't an error, but we don't want to continue.
         if not quiet:
             printer.print_warning('\nAborted loading/checking of local settings')
         sys.exit(0)
-    if success:
-        if not quiet:
-            printer.print_success('Settings loaded successfully from {0}'.format(file_name))
-    else:
+    if not success:
         raise LocalSettingsError(
             'Could not load local settings from {0}'.format(file_name))
+    if not quiet:
+        printer.print_success('Settings loaded successfully from {0}'.format(file_name))
+    return settings

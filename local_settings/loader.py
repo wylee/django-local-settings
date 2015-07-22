@@ -40,7 +40,18 @@ class Loader(Base):
         return settings
 
     def load(self, base_settings):
-        """Load local settings from file into base settings."""
+        """Merge local settings from file with ``base_settings``.
+
+        Returns a new OrderedDict containing the base settings and the
+        loaded settings. Ordering is:
+
+            - base settings
+            - settings from extended file(s), if any
+            - settings from file
+
+        When a setting is overridden, it gets moved to the end.
+
+        """
         if not os.path.exists(self.file_name):
             self.print_warning(
                 'Local settings file `{0}` not found'.format(self.file_name))
@@ -49,7 +60,7 @@ class Loader(Base):
         for k, v in self.read_file().items():
             names = k.split('.')
             v = self._parse_setting(v, expand_vars=True)
-            obj = base_settings
+            obj = settings
             for name, next_name in zip(names[:-1], names[1:]):
                 next_name = self._convert_name(next_name)
                 next_is_seq = isinstance(next_name, int)
@@ -75,7 +86,8 @@ class Loader(Base):
                     self.registry[curr_v] = name
             obj[name] = v
             settings.move_to_end(names[0])
-        self._do_interpolation(base_settings, base_settings)
+        self._do_interpolation(settings, settings)
+        return settings
 
     def _do_interpolation(self, v, settings):
         if isinstance(v, string_types):
