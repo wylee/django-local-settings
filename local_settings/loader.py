@@ -1,6 +1,6 @@
 import os
 import re
-from collections import Mapping, Sequence
+from collections import Mapping, OrderedDict, Sequence
 
 from six import string_types
 
@@ -24,15 +24,19 @@ class Loader(Base):
         parser = self._make_parser()
         with open(self.file_name) as fp:
             parser.read_file(fp)
-        settings = {}
         extends = parser[self.section].pop('extends', None)
+        settings = OrderedDict()
         if extends:
             extends = self._parse_setting(extends, expand_vars=True)
             if isinstance(extends, str):
                 extends = [extends]
             for e in reversed(extends):
                 settings.update(self.__class__(e, extender=self).read_file())
-        settings.update(parser[self.section])
+        settings_from_file = parser[self.section]
+        for k in settings:
+            if k in settings_from_file:
+                del settings[k]
+        settings.update(settings_from_file)
         return settings
 
     def load(self, base_settings):
@@ -41,6 +45,7 @@ class Loader(Base):
             self.print_warning(
                 'Local settings file `{0}` not found'.format(self.file_name))
             return
+        settings = OrderedDict((k, v) for (k, v) in base_settings.items())
         for k, v in self.read_file().items():
             names = k.split('.')
             v = self._parse_setting(v, expand_vars=True)
@@ -69,6 +74,7 @@ class Loader(Base):
                     curr_v.value = v
                     self.registry[curr_v] = name
             obj[name] = v
+            settings.move_to_end(names[0])
         self._do_interpolation(base_settings, base_settings)
 
     def _do_interpolation(self, v, settings):
