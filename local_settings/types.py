@@ -87,6 +87,19 @@ class LocalSetting(object):
             return self.validator(v)
         return True
 
+    def __str__(self):
+        try:
+            default = repr(self.default)
+        except NoDefaultError:
+            default = '[NO DEFAULT VALUE]'
+        try:
+            value = repr(self.value)
+        except NoValueError:
+            value = '[NO VALUE SET]'
+        s = '<{0.__class__.__name__} with default `{default}` and value `{value}`>'
+        s = s.format(self, default=default, value=value)
+        return s
+
 
 class SecretSetting(LocalSetting):
 
