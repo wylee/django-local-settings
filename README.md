@@ -15,19 +15,20 @@ The problems with local settings are:
 - How to ensure local (and esp. secret) settings don't get added to version control
 
 One common approach is to create a local settings template module with dummy/default values. When
-new developers start working on a project, they copy this file (e.g., `local_settings.py.template =>
-local_settings.py`), which is typically excluded from version control. This approach at least
+new developers start working on a project, they copy this file (e.g., `local_settings.py.template
+=> local_settings.py`), which is typically excluded from version control. This approach at least
 identifies which settings are local, but it's not very convenient with regard to setting values and
 ensuring those values are valid. Also, instead of giving you a friendly heads-up when you forget to
 set a local setting, it barfs out an exception.
 
 This package takes the approach that there will be only one settings *module* per project in the
-standard location: `{project}.settings`. That module defines/overrides Django's base settings in the
-usual way *plus* it defines which settings are local and which are secret.
+standard location: `{project}.settings`. That module defines/overrides Django's base settings in
+the usual way *plus* it defines which settings are local and which are secret.
 
 In addition to the settings module, there will be one or more settings *files*. These are standard
-INI files with the added twist that the values are JSON encoded. The reasoning behind this is to use
-a simple, standard config file format while still allowing for easy handling of non-string settings.
+INI files with the added twist that the values are JSON encoded. The reasoning behind this is to
+use a simple, standard config file format while still allowing for easy handling of non-string
+settings.
 
 TODO: Maybe add support for different config file format (e.g., YAML)?
 
@@ -60,18 +61,18 @@ Once the local settings are defined, *any missing settings will be prompted for 
             },
         }
         SECRET_KEY = SecretSetting(doc='The secret key for doing secret stuff')
-    
+
     As you can see, local settings can be defined anywhere within the definition of a top level
     setting. They can also have doc strings, which are displayed when prompting.
 
 - After all the local settings are defined, add this line:
 
         load_and_check_settings(globals())
-    
+
     When this line runs, it will load local settings from a file (`$CWD/local.cfg` by default) and
     prompt for any that are missing. When not running on a TTY/console, missing local settings will
     cause an exception to be raised.
-    
+
     After this line runs, you will be able to use the local settings just like any other settings.
     For example, you could do `if DEBUG: ...`; at this point, `DEBUG` is no longer a `LocalSetting`
     instance--it's a regular old bool.
@@ -79,7 +80,7 @@ Once the local settings are defined, *any missing settings will be prompted for 
 - Now you can run any manage.py command, and you will be prompted to enter any missing local
   settings. On the first run, the settings file will be created. On subsequent runs when new local
   settings are added to the settings module, the settings file will be appended to.
-  
+
 - Alternatively, you can run the included `make-local-settings` script to generate a local settings
   file.
 
