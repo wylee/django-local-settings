@@ -47,13 +47,19 @@ Once the local settings are defined, *any missing settings will be prompted for 
 
 ## Basic usage
 
-- At the bottom of your project's settings module, define some local settings:
+- At the top of your project's settings module, import the `load_and_check_settings` function along
+  with the types of settings you need:
 
+        from local_settings import load_and_check_settings, LocalSetting, SecretSetting
+
+- Then define some base settings and local settings:
+
+        PACKAGE = 'vcp'
         DEBUG = LocalSetting(default=False)
         DATABASES = {
             'default': {
-                'ENGINE': 'django.db.backends.<some back end>',
-                'NAME': LocalSetting(default='default db name for development'),
+                'ENGINE': 'django.db.backends.postgresql_pyscopg2',
+                'NAME': LocalSetting(default='{PACKAGE}'),
                 'USER': LocalSetting(''),
                 'PASSWORD': SecretSetting(),
                 'HOST': LocalSetting(''),
@@ -65,17 +71,27 @@ Once the local settings are defined, *any missing settings will be prompted for 
     As you can see, local settings can be defined anywhere within the definition of a top level
     setting. They can also have doc strings, which are displayed when prompting.
 
-- After all the local settings are defined, add this line:
+- After all the local settings are defined, add the following lines:
 
-        load_and_check_settings(globals())
+        _settings = load_and_check_settings(globals())
+        globals().update(_settings)
 
-    When this line runs, it will load local settings from a file (`$CWD/local.cfg` by default) and
-    prompt for any that are missing. When not running on a TTY/console, missing local settings will
+    These two lines merge the project's local settings into the settings module's namespace.
+    Passing `globals()` initializes the local settings loader with base settings (e.g., `PACKAGE`
+    in the example above) and by "telling" it which settings are local settings.
+
+    `load_and_check_settings()` loads the project's local settings from a file (`$PWD/local.cfg` by
+    default), prompting for any that are missing, and returns a new dictionary with local settings
+    merged over any base settings. When not running on a TTY/console, missing local settings will
     cause an exception to be raised.
 
+    `globals().update(_settings)` merges all of the settings into the settings module's namespace.
     After this line runs, you will be able to use the local settings just like any other settings.
     For example, you could do `if DEBUG: ...`; at this point, `DEBUG` is no longer a `LocalSetting`
     instance--it's a regular old bool.
+
+    Note: You could just write `globals().update(load_and_check_settings(globals()))`. The spelling
+    above is just intended to make it more clear what's happening.
 
 - Now you can run any manage.py command, and you will be prompted to enter any missing local
   settings. On the first run, the settings file will be created. On subsequent runs when new local
