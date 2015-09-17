@@ -24,7 +24,7 @@ def make_local_settings(argv=None):
 
     args = parser.parse_args(argv)
 
-    os.environ['DISABLE_LOCAL_SETTINGS'] = '1'
+    os.environ['LOCAL_SETTINGS_DISABLE'] = '1'
     if args.base_settings_module is None:
         dist = next(find_distributions('.', only=True), None)
         if dist is not None:
