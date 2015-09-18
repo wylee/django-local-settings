@@ -51,18 +51,11 @@ def load_and_check_settings(base_settings,  file_name=None, section=None, base_p
         quiet = json.loads(os.environ.get('LOCAL_SETTINGS_CONFIG_QUIET', 'false'))
     if not quiet:
         printer = ColorPrinter()
-    key = 'LOCAL_SETTINGS_DISABLE'
-    disable_local_settings = os.environ.get(key, base_settings.get(key, False))
-    if disable_local_settings:
-        if not quiet:
-            printer.print_warning('Loading of local settings disabled')
-        return
-    else:
-        if file_name is None:
-            file_name = get_file_name()
-        if not os.path.isabs(file_name):
-            base_path = base_path or os.getcwd()
-            file_name = os.path.normpath(os.path.join(base_path, file_name))
+    if file_name is None:
+        file_name = get_file_name()
+    if not os.path.isabs(file_name):
+        base_path = base_path or os.getcwd()
+        file_name = os.path.normpath(os.path.join(base_path, file_name))
     try:
         try:
             loader = Loader(file_name, section)
