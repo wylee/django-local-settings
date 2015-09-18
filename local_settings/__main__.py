@@ -1,6 +1,7 @@
 import argparse
 import os
-from pkg_resources import find_distributions
+
+from setuptools import find_packages
 
 from .checker import Checker
 from .loader import Loader
@@ -26,11 +27,13 @@ def make_local_settings(argv=None):
 
     os.environ['LOCAL_SETTINGS_DISABLE'] = '1'
     if args.base_settings_module is None:
-        dist = next(find_distributions('.', only=True), None)
-        if dist is not None:
-            args.base_settings_module = '{0.project_name}.settings'.format(dist)
+        package = find_packages()[0]
+        path = os.path.join(os.getcwd(), package, 'settings.py')
+        if os.path.exists(path):
+            args.base_settings_module = '{package}.settings'.format(package=package)
+            print('Using {0.base_settings_module} as base settings module'.format(args))
         else:
-            msg = 'Could not guess which base settings module to use; specify with -b'
+            msg = 'Could not guess which base settings module to use; specify with -b\n'
             parser.exit(1, msg)
 
     module = __import__(args.base_settings_module, fromlist=[''])
