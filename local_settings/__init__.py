@@ -70,6 +70,7 @@ def load_and_check_settings(base_settings,  file_name=None, section=None, base_p
             registry = loader.registry
         except SettingsFileNotFoundError:
             registry = None
+            settings = base_settings
         checker = Checker(file_name, section, registry=registry)
         success = checker.check(settings)
     except KeyboardInterrupt:
