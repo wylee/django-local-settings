@@ -3,9 +3,6 @@ import os
 
 from setuptools import find_packages
 
-from .checker import Checker
-from .loader import Loader
-
 
 def make_local_settings(argv=None):
     """Generate a local settings file."""
@@ -25,7 +22,6 @@ def make_local_settings(argv=None):
 
     args = parser.parse_args(argv)
 
-    os.environ['LOCAL_SETTINGS_DISABLE'] = '1'
     if args.base_settings_module is None:
         package = find_packages()[0]
         path = os.path.join(os.getcwd(), package, 'settings.py')
@@ -35,9 +31,6 @@ def make_local_settings(argv=None):
         else:
             msg = 'Could not guess which base settings module to use; specify with -b\n'
             parser.exit(1, msg)
-
-    module = __import__(args.base_settings_module, fromlist=[''])
-    base_settings = vars(module)
 
     if args.file_name is None:
         file_name = 'local.{0.env}.cfg'.format(args)
@@ -53,23 +46,11 @@ def make_local_settings(argv=None):
     if args.section:
         section = args.section
 
-    registry = None
+    if os.path.exists(file_name) and args.overwrite:
+        os.remove(file_name)
 
-    if os.path.exists(file_name):
-        if args.overwrite:
-            print('Overwriting {0.file_name}'.format(args))
-            with open(file_name, 'w'):
-                pass
-        else:
-            loader = Loader(file_name, section)
-            loader.load(base_settings)
-            registry = loader.registry
-
-    checker = Checker(file_name, section, registry=registry)
-    try:
-        checker.check(base_settings)
-    except KeyboardInterrupt:
-        print('\nAborted')
+    os.environ['LOCAL_SETTINGS_FILE'] = '#'.join((file_name, section))
+    __import__(args.base_settings_module, fromlist=[''])
 
 
 if __name__ == '__main__':
