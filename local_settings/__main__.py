@@ -8,9 +8,7 @@ from .loader import Loader
 
 def make_local_settings(argv=None):
     """Generate a local settings file."""
-    parser = argparse.ArgumentParser(
-        description=make_local_settings.__doc__,
-    )
+    parser = argparse.ArgumentParser(description=make_local_settings.__doc__)
 
     parser.add_argument('env', help='Environment name (e.g., dev or prod)')
     parser.add_argument(
