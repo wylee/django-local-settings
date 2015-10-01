@@ -33,9 +33,9 @@ class Loader(Base):
             for e in reversed(extends):
                 settings.update(self.__class__(e, extender=self).read_file())
         settings_from_file = parser[self.section]
-        for k in settings:
-            if k in settings_from_file:
-                del settings[k]
+        remove = [k for k in settings if k in settings_from_file]
+        for k in remove:
+            del settings[k]
         settings.update(settings_from_file)
         return settings
 
