@@ -1,10 +1,7 @@
 import json
 import os.path
 import pkg_resources
-from collections import Mapping, Sequence
 from configparser import ConfigParser
-
-from six import string_types
 
 from .color_printer import ColorPrinter
 from .util import get_file_name
@@ -86,7 +83,7 @@ class Base(ColorPrinter):
         parser.optionxform = lambda option: option
         return parser
 
-    def _parse_setting(self, v, expand_vars=False):
+    def _parse_setting(self, v):
         """Parse the string ``v`` and return the parsed value.
 
         If ``v`` is an empty string, ``None`` will be returned.
@@ -102,18 +99,4 @@ class Base(ColorPrinter):
             v = json.loads(v)
         except ValueError:
             raise ValueError('Could not parse `{0}` as JSON'.format(v))
-        if expand_vars:
-            return self._expand_vars(v)
-        return v
-
-    def _expand_vars(self, v):
-        """Expand all env. vars in all strings in/under ``v``."""
-        if isinstance(v, string_types):
-            v = os.path.expandvars(v)
-        elif isinstance(v, Mapping):
-            for k in v:
-                v[k] = self._expand_vars(v[k])
-        elif isinstance(v, Sequence):
-            for i, item in enumerate(v):
-                v[i] = self._expand_vars(item)
         return v

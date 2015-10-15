@@ -27,7 +27,7 @@ class Loader(Base):
         extends = parser[self.section].get('extends')
         settings = OrderedDict()
         if extends:
-            extends = self._parse_setting(extends, expand_vars=True)
+            extends = self._parse_setting(extends)
             if isinstance(extends, str):
                 extends = [extends]
             for e in reversed(extends):
@@ -60,7 +60,7 @@ class Loader(Base):
         settings = OrderedDict((k, v) for (k, v) in base_settings.items() if is_upper(k))
         for k, v in self.read_file().items():
             names = k.split('.')
-            v = self._parse_setting(v, expand_vars=True)
+            v = self._parse_setting(v)
             obj = settings
             for name, next_name in zip(names[:-1], names[1:]):
                 next_name = self._convert_name(next_name)
