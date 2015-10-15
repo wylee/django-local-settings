@@ -88,17 +88,17 @@ class Loader(Base):
             obj[name] = v
             settings.move_to_end(names[0])
         settings.pop('extends', None)
-        self._do_interpolation(settings, settings)
+        self._interpolate(settings, settings)
         return settings
 
-    def _do_interpolation(self, v, settings):
+    def _interpolate(self, v, settings):
         if isinstance(v, string_types):
             v = v.format(**settings)
         elif isinstance(v, Mapping):
             for k in v:
-                v[k] = self._do_interpolation(v[k], settings)
+                v[k] = self._interpolate(v[k], settings)
         elif isinstance(v, Sequence):
-            v = v.__class__(self._do_interpolation(item, settings) for item in v)
+            v = v.__class__(self._interpolate(item, settings) for item in v)
         return v
 
     def _convert_name(self, name):
