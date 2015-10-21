@@ -2,6 +2,8 @@ import os
 import re
 from collections import Mapping, OrderedDict, Sequence
 
+from django.utils.module_loading import import_string
+
 from six import string_types
 
 from .base import Base
@@ -91,6 +93,7 @@ class Loader(Base):
             settings.move_to_end(names[0])
         settings.pop('extends', None)
         self._interpolate(settings, settings)
+        self._import_from_string(settings)
         return settings
 
     def _traverse(self, settings, name, visit_func=None, last_only=False, args=NO_DEFAULT):
@@ -150,6 +153,13 @@ class Loader(Base):
         elif isinstance(v, Sequence):
             v = v.__class__(self._interpolate(item, settings) for item in v)
         return v
+
+    def _import_from_string(self, settings):
+        def visit_func(obj, key, val, args):
+            if isinstance(val, string_types):
+                obj[key] = import_string(val)
+        for name in settings.get('IMPORT_FROM_STRING', ()):
+            self._traverse(settings, name, visit_func, last_only=True)
 
     def _convert_name(self, name):
         """Convert ``name`` to int if it looks like an int.
