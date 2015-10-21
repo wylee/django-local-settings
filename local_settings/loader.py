@@ -7,7 +7,7 @@ from six import string_types
 from .base import Base
 from .exc import SettingsFileNotFoundError
 from .types import LocalSetting
-from .util import NO_DEFAULT as PLACEHOLDER
+from .util import NO_DEFAULT, NO_DEFAULT as PLACEHOLDER
 
 
 class Loader(Base):
@@ -51,6 +51,8 @@ class Loader(Base):
 
         When a setting is overridden, it gets moved to the end.
 
+        TODO: Rewrite this using :meth:`_traverse`.
+
         """
         if not os.path.exists(self.file_name):
             self.print_warning(
@@ -90,6 +92,54 @@ class Loader(Base):
         settings.pop('extends', None)
         self._interpolate(settings, settings)
         return settings
+
+    def _traverse(self, settings, name, visit_func=None, last_only=False, args=NO_DEFAULT):
+        """Traverse to the setting indicated by ``name``.
+
+        For each object along the way, starting with ``settings``, call
+        ``visit_func`` with the following args:
+
+            - Current object
+            - Next key
+            - NO_DEFAULT or value of setting (when settings is reached)
+            - ``args``
+
+        As an example, imagine ``settings`` is the following dict::
+
+            {
+                'PANTS': {
+                    'types': ['jeans', 'slacks'],
+                    'total': 10,
+                }
+            }
+
+        Then calling this method with ``name='PANTS.types.0'`` would
+        result in the following calls to ``visit_func``::
+
+            visit_func(settings,                  'PANTS', NO_DEFAULT, args)
+            visit_func(settings['PANTS'],         'types', NO_DEFAULT, args)
+            visit_func(settings['PANTS']['types'], 0,      'jeans', args)
+
+        Calling this method with ``name='PANTS.total'`` would result in
+        the following calls to ``visit_func``::
+
+            visit_func(settings,          'PANTS', NO_DEFAULT, args)
+            visit_func(settings['PANTS'], 'jeans', 10, args)
+
+        In the common case where you just want to process the value of
+        the setting specified by ``name``, pass ``last_only=True``.
+
+        """
+        obj = settings
+        keys = [self._convert_name(n) for n in name.split('.')]
+        for k in keys[:-1]:
+            if visit_func is not None and not last_only:
+                visit_func(obj, k, NO_DEFAULT, args)
+            obj = obj[k]
+        last_k = keys[-1]
+        val = obj[last_k]
+        if visit_func is not None:
+            visit_func(obj, last_k, val, args)
 
     def _interpolate(self, v, settings):
         if isinstance(v, string_types):
