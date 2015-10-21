@@ -94,6 +94,7 @@ class Loader(Base):
         settings.pop('extends', None)
         self._interpolate(settings, settings)
         self._import_from_string(settings)
+        self._append_extras(settings)
         return settings
 
     def _traverse(self, settings, name, visit_func=None, last_only=False, args=NO_DEFAULT):
@@ -160,6 +161,14 @@ class Loader(Base):
                 obj[key] = import_string(val)
         for name in settings.get('IMPORT_FROM_STRING', ()):
             self._traverse(settings, name, visit_func, last_only=True)
+
+    def _append_extras(self, settings):
+        def visit_func(obj, key, val, args):
+            obj[key] = val + args['extra_val']
+        extras = settings.get('EXTRA', ())
+        for name, extra_val in extras.items():
+            visit_func_args = {'extra_val': extra_val}
+            self._traverse(settings, name, visit_func, last_only=True, args=visit_func_args)
 
     def _convert_name(self, name):
         """Convert ``name`` to int if it looks like an int.
