@@ -1,5 +1,6 @@
 import json
 import os
+import pkg_resources
 import sys
 
 from .color_printer import ColorPrinter
@@ -53,6 +54,9 @@ def load_and_check_settings(base_settings,  file_name=None, section=None, base_p
         printer = ColorPrinter()
     if file_name is None:
         file_name = get_file_name()
+    if ':' in file_name:
+        package, path = file_name.split(':', 1)
+        file_name = pkg_resources.resource_filename(package, path)
     if not os.path.isabs(file_name):
         base_path = base_path or os.getcwd()
         file_name = os.path.normpath(os.path.join(base_path, file_name))
