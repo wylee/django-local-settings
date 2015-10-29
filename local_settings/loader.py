@@ -165,7 +165,7 @@ class Loader(Base):
     def _append_extras(self, settings):
         def visit_func(obj, key, val, args):
             obj[key] = val + args['extra_val']
-        extras = settings.get('EXTRA', ())
+        extras = settings.get('EXTRA', {})
         for name, extra_val in extras.items():
             visit_func_args = {'extra_val': extra_val}
             self._traverse(settings, name, visit_func, last_only=True, args=visit_func_args)
