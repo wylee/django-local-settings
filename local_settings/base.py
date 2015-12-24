@@ -1,7 +1,7 @@
 import json
 import os.path
 import pkg_resources
-from configparser import ConfigParser
+from configparser import ConfigParser, ExtendedInterpolation
 
 from .color_printer import ColorPrinter
 from .util import get_file_name
@@ -79,6 +79,7 @@ class Base(ColorPrinter):
         self.section = section
 
     def _make_parser(self, *args, **kwargs):
+        kwargs.setdefault('interpolation', ExtendedInterpolation())
         parser = ConfigParser(*args, **kwargs)
         parser.optionxform = lambda option: option
         return parser
