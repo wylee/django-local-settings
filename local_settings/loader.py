@@ -200,7 +200,10 @@ class Loader(Base):
             v = v.format(**settings)
         elif isinstance(v, Mapping):
             for k in v:
+                new_k = k.format(**settings)
                 v[k] = self._interpolate(v[k], settings)
+                if k != new_k:
+                    del v[k]
         elif isinstance(v, Sequence):
             v = v.__class__(self._interpolate(item, settings) for item in v)
         return v
