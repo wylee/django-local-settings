@@ -1,6 +1,7 @@
 import os
 import re
 from collections import Mapping, OrderedDict, Sequence
+from itertools import takewhile
 
 from django.utils.module_loading import import_string
 
@@ -63,7 +64,7 @@ class Loader(Base):
         is_upper = lambda k: k == k.upper()
         settings = OrderedDict((k, v) for (k, v) in base_settings.items() if is_upper(k))
         for k, v in self.read_file().items():
-            names = k.split('.')
+            names = self._parse_path(k)
             v = self._parse_setting(v)
             obj = settings
             for name, next_name in zip(names[:-1], names[1:]):
@@ -96,6 +97,55 @@ class Loader(Base):
         self._import_from_string(settings)
         self._append_extras(settings)
         return settings
+
+    def _parse_path(self, path):
+        """Parse ``path`` into segments.
+
+        Paths must start with a WORD (i.e., a top level Django setting
+        name). Path segments are separated by dots. Compound path
+        segments (i.e., a name with a dot in it) can be grouped inside
+        parentheses.
+
+        Examples::
+
+            >>> loader = Loader()
+            >>> loader._parse_path('WORD')
+            ['WORD']
+            >>> loader._parse_path('WORD.x')
+            ['WORD', 'x']
+            >>> loader._parse_path('WORD.(x)')
+            ['WORD', 'x']
+            >>> loader._parse_path('WORD.(x.y)')
+            ['WORD', 'x.y']
+            >>> loader._parse_path('WORD.(x.y).z')
+            ['WORD', 'x.y', 'z']
+
+        An example of where compound names are actually useful is in
+        logger settings::
+
+            LOGGING.loggers.(package.module).handlers = ["console"]
+            LOGGING.loggers.(package.module).level = "DEBUG"
+
+        """
+        segments = []
+        ipath = iter(path)
+
+        for char in ipath:
+            if char == '(':
+                segment = []
+                end = ')'
+            else:
+                segment = [char]
+                end = '.'
+
+            # Note: takewhile() consumes the end character
+            segment.extend(takewhile(lambda c: c != end, ipath))
+            segments.append(segment)
+
+            if end == ')':
+                next(ipath, None)
+
+        return [''.join(s) for s in segments]
 
     def _traverse(self, settings, name, visit_func=None, last_only=False, args=NO_DEFAULT):
         """Traverse to the setting indicated by ``name``.

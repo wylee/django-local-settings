@@ -1,7 +1,9 @@
 import os
+import tempfile
 from unittest import TestCase
 
 from .exc import NoDefaultError
+from .loader import Loader
 from .types import LocalSetting, SecretSetting
 from .util import NO_DEFAULT, get_file_name
 
@@ -76,3 +78,49 @@ class TestSecretSetting(TestCase):
 
     def test_secret_setting_cannot_have_a_default(self):
         self.assertRaises(TypeError, SecretSetting, default='pants')
+
+
+class TestPathParsing(TestCase):
+
+    def setUp(self):
+        self.temp_file = tempfile.NamedTemporaryFile(mode='r')
+        self.loader = Loader(self.temp_file.name)
+
+    def tearDown(self):
+        self.temp_file.close()
+
+    def test_simple_path(self):
+        segments = self.loader._parse_path('XYZ')
+        self.assertEqual(segments, ['XYZ'])
+
+    def test_dotted_path(self):
+        segments = self.loader._parse_path('XYZ.abc')
+        self.assertEqual(segments, ['XYZ', 'abc'])
+
+    def test_multi_dotted_path(self):
+        segments = self.loader._parse_path('XYZ.abc.x.y.z')
+        self.assertEqual(segments, ['XYZ', 'abc', 'x', 'y', 'z'])
+
+    def test_compound_path_at_end(self):
+        segments = self.loader._parse_path('XYZ.(a.b.c)')
+        self.assertEqual(segments, ['XYZ', 'a.b.c'])
+
+    def test_compound_path_in_middle(self):
+        segments = self.loader._parse_path('XYZ.(a.b.c).d')
+        self.assertEqual(segments, ['XYZ', 'a.b.c', 'd'])
+
+    def test_non_dotted_compound_path(self):
+        segments = self.loader._parse_path('XYZ.(abc)')
+        self.assertEqual(segments, ['XYZ', 'abc'])
+
+    def test_multi_non_dotted_compound_path_at_end(self):
+        segments = self.loader._parse_path('XYZ.(a).(b).(c)')
+        self.assertEqual(segments, ['XYZ', 'a', 'b', 'c'])
+
+    def test_multi_non_dotted_compound_path_in_middle(self):
+        segments = self.loader._parse_path('XYZ.(a).(b).(c).dddd')
+        self.assertEqual(segments, ['XYZ', 'a', 'b', 'c', 'dddd'])
+
+    def test_complex_path(self):
+        segments = self.loader._parse_path('XYZ.(a).(b.b).c.(d)')
+        self.assertEqual(segments, ['XYZ', 'a', 'b.b', 'c', 'd'])
