@@ -1,5 +1,6 @@
 import os
 import unittest
+from collections import OrderedDict
 
 from ..loader import Loader
 
@@ -51,3 +52,35 @@ class TestPathParsing(Base):
     def test_complex_path(self):
         segments = self.loader._parse_path('XYZ.(a).(b.b).c.(d)')
         self.assertEqual(segments, ['XYZ', 'a', 'b.b', 'c', 'd'])
+
+
+class TestLoading(Base):
+
+    def test_loading(self):
+        settings = self.loader.load({})
+        expected = OrderedDict((
+            ('PACKAGE', 'local_settings'),
+
+            ('A', {
+                'b': {
+                    'c': 1,
+                    'd': 2,
+                }
+            }),
+
+            ('X', {
+                'y': {
+                    'z': '1',
+                },
+            }),
+
+            ('LIST', ['a', 'b']),
+
+            ('TEMPLATES', [{
+                'BACKEND': 'package.module.Class',
+                'OPTIONS': {
+                    'context_processors': ['a.b', 'x.y.z'],
+                }
+            }])
+        ))
+        self.assertEqual(list(settings.items()), list(expected.items()))
