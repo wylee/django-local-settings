@@ -1,9 +1,9 @@
 .PHONY: init test
 
 init:
+	test -d .env && rm -rf .env || true
 	virtualenv -p python3 .env
-	.env/bin/pip install -e .
-	.env/bin/pip install django
+	.env/bin/pip install -e .[dev]
 	$(MAKE) test
 
 test:
