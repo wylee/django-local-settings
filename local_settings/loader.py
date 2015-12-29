@@ -68,7 +68,6 @@ class Loader(Base):
             v = self._parse_setting(v)
             obj = settings
             for name, next_name in zip(names[:-1], names[1:]):
-                next_name = self._convert_name(next_name)
                 next_is_seq = isinstance(next_name, int)
                 default = [PLACEHOLDER] * (next_name + 1) if next_is_seq else {}
                 if isinstance(obj, Mapping):
@@ -81,7 +80,7 @@ class Loader(Base):
                     if obj[name] is PLACEHOLDER:
                         obj[name] = default
                 obj = obj[name]
-            name = self._convert_name(names[-1])
+            name = names[-1]
             try:
                 curr_v = obj[name]
             except (KeyError, IndexError):
@@ -126,6 +125,10 @@ class Loader(Base):
             LOGGING.loggers.(package.module).handlers = ["console"]
             LOGGING.loggers.(package.module).level = "DEBUG"
 
+        Any segment that looks like an int will be converted to an int.
+        Segments that start with a leading '0' followed by other digits
+        will not be converted.
+
         """
         segments = []
         ipath = iter(path)
@@ -140,12 +143,14 @@ class Loader(Base):
 
             # Note: takewhile() consumes the end character
             segment.extend(takewhile(lambda c: c != end, ipath))
+            segment = ''.join(segment)
+            segment = self._convert_name(segment)
             segments.append(segment)
 
             if end == ')':
                 next(ipath, None)
 
-        return [''.join(s) for s in segments]
+        return segments
 
     def _traverse(self, settings, name, visit_func=None, last_only=False, args=NO_DEFAULT):
         """Traverse to the setting indicated by ``name``.
@@ -185,7 +190,7 @@ class Loader(Base):
 
         """
         obj = settings
-        keys = [self._convert_name(n) for n in name.split('.')]
+        keys = self._parse_path(name)
         for k in keys[:-1]:
             if visit_func is not None and not last_only:
                 visit_func(obj, k, NO_DEFAULT, args)
