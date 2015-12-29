@@ -61,36 +61,56 @@ class Loader(Base):
             self.print_warning(
                 'Local settings file `{0}` not found'.format(self.file_name))
             return
-        is_upper = lambda k: k == k.upper()
-        settings = OrderedDict((k, v) for (k, v) in base_settings.items() if is_upper(k))
+
+        settings = OrderedDict((k, v) for (k, v) in base_settings.items() if k.isupper())
+
         for k, v in self.read_file().items():
-            names = self._parse_path(k)
-            v = self._parse_setting(v)
             obj = settings
-            for name, next_name in zip(names[:-1], names[1:]):
-                next_is_seq = isinstance(next_name, int)
-                default = [PLACEHOLDER] * (next_name + 1) if next_is_seq else {}
+            names = self._parse_path(k)
+            value = self._parse_setting(v)
+
+            for name, next_name in zip(names, names[1:] + [None]):
+                last = next_name is None
+
+                # Get default value based on the *next* segment name
+                if last:
+                    default = PLACEHOLDER
+                elif isinstance(next_name, int):
+                    default = [PLACEHOLDER] * (next_name + 1)
+                else:
+                    default = OrderedDict()
+
+                # Ensure there's an object in the current slot
                 if isinstance(obj, Mapping):
                     if name not in obj:
                         obj[name] = default
                 elif isinstance(obj, Sequence):
-                    name = int(name)
                     while name >= len(obj):
                         obj.append(PLACEHOLDER)
                     if obj[name] is PLACEHOLDER:
                         obj[name] = default
-                obj = obj[name]
+
+                # Ensure newer settings are ordered after older settings
+                # so interpolation that depends on older settings will
+                # work in a deterministic way.
+                if isinstance(obj, OrderedDict):
+                    obj.move_to_end(name)
+
+                if not last:
+                    obj = obj[name]
+
             name = names[-1]
-            try:
-                curr_v = obj[name]
-            except (KeyError, IndexError):
-                pass
-            else:
-                if isinstance(curr_v, LocalSetting):
-                    curr_v.value = v
-                    self.registry[curr_v] = name
-            obj[name] = v
-            settings.move_to_end(names[0])
+            current_value = obj[name]
+
+            # If there's already a LocalSetting in this slot, set the
+            # value of that LocalSetting and put it in the registry so
+            # it can be easily retrieved later.
+            if isinstance(current_value, LocalSetting):
+                current_value.value = value
+                self.registry[current_value] = name
+
+            obj[name] = value
+
         settings.pop('extends', None)
         self._interpolate(settings, settings)
         self._import_from_string(settings)
