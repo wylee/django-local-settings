@@ -164,7 +164,8 @@ class Loader(Base):
                 next(ipath, None)
         return segments
 
-    def _traverse(self, obj, name, visit=None, args=None, last_only=False):
+    def _traverse(self, obj, name, visit=None, args=None, last_only=False, create_missing=False,
+                  default=NO_DEFAULT):
         """Traverse to the item specified by ``name``.
 
         If no ``visit`` function is passed, this will simply retrieve
@@ -220,19 +221,57 @@ class Loader(Base):
         In the common case where you just want to process the value of
         the setting specified by ``name``, pass ``last_only=True``.
 
+        To create missing items on the way to the ``name``d item, pass
+        ``create_missing=True``. This will insert an item for each
+        missing segment in ``name``. The type and value of item that
+        will be inserted for a missing segment depends on the *next*
+        segment. If a ``default`` value is passed, the ``name``d item
+        will be set to this value; otherwise, a default default will
+        be used. See :meth:`_get_or_create_segment` for more info.
+
         """
         segments = self._parse_path(name)
         visit_segments = visit is not None
         visit_all = not last_only
         for segment, next_segment in zip(segments, segments[1:] + [None]):
-            val = obj[segment]
             last = next_segment is None
+            if create_missing:
+                segment_default = default if last else NO_DEFAULT
+                val = self._get_or_create_segment(obj, segment, next_segment, segment_default)
+            else:
+                val = obj[segment]
             if visit_segments and (visit_all or last):
                 result = visit(obj, segment, val, next_segment, args)
                 obj = result if result is not None else val
             else:
                 obj = val
         return obj
+
+    def _get_or_create_segment(self, obj, segment, next_segment, default=NO_DEFAULT) -> object:
+        """Get ``obj[segment]``; create ``obj[segment]`` if missing.
+
+        The default value for a missing segment is based on the *next*
+        segment, unless a ``default`` is explicitly passed.
+
+        If the next segment is an int, the default will be a list with
+        the indicated number of items. Otherwise the default will be
+        an OrderedDict.
+
+        """
+        if default is NO_DEFAULT:
+            if isinstance(next_segment, int):
+                default = [PLACEHOLDER] * (next_segment + 1)
+            else:
+                default = OrderedDict()
+        if isinstance(obj, Mapping):
+            if segment not in obj:
+                obj[segment] = default
+        elif isinstance(obj, Sequence):
+            while segment >= len(obj):
+                obj.append(PLACEHOLDER)
+            if obj[segment] is PLACEHOLDER:
+                obj[segment] = default
+        return obj[segment]
 
     def _interpolate(self, v, settings):
         if isinstance(v, string_types):
