@@ -144,18 +144,22 @@ class Loader(Base):
                 next(ipath, None)
         return segments
 
-    def _traverse(self, settings, name, visit_func=None, last_only=False, args=NO_DEFAULT):
-        """Traverse to the setting indicated by ``name``.
+    def _traverse(self, obj, name, visit=None, args=None, last_only=False):
+        """Traverse to the item specified by ``name``.
 
-        For each object along the way, starting with ``settings``, call
-        ``visit_func`` with the following args:
+        If no ``visit`` function is passed, this will simply retrieve
+        the value of the item specified by ``name``. Otherwise...
+
+        For each object along the way, starting with ``obj``, call
+        ``visit`` with the following args:
 
             - Current object
+            - Key (next key to retrieve from current object)
+            - Value (value of next key)
             - Next key
-            - NO_DEFAULT or value of setting (when settings is reached)
             - ``args``
 
-        As an example, imagine ``settings`` is the following dict::
+        As an example, imagine ``obj`` is the following settings dict::
 
             {
                 'PANTS': {
@@ -165,32 +169,50 @@ class Loader(Base):
             }
 
         Then calling this method with ``name='PANTS.types.0'`` would
-        result in the following calls to ``visit_func``::
+        result in the following calls to ``visit``::
 
-            visit_func(settings,                  'PANTS', NO_DEFAULT, args)
-            visit_func(settings['PANTS'],         'types', NO_DEFAULT, args)
-            visit_func(settings['PANTS']['types'], 0,      'jeans', args)
+            visit(
+                obj,
+                'PANTS',
+                {'types': ['jeans', 'slacks'], 'total': 10},
+                'types',
+                args)
 
-        Calling this method with ``name='PANTS.total'`` would result in
-        the following calls to ``visit_func``::
+            visit(
+                {'types': ['jeans', 'slacks'], 'total': 10},
+                'types',
+                ['jeans', 'slacks'],
+                0,
+                args)
 
-            visit_func(settings,          'PANTS', NO_DEFAULT, args)
-            visit_func(settings['PANTS'], 'jeans', 10, args)
+            visit(
+                ['jeans', 'slacks'],
+                0,
+                'jeans',
+                NO_DEFAULT,
+                args)
+
+        Generally, the ``visit`` function shouldn't return anything
+        other than ``None``; if it does, the returned value will become
+        the next object instead of getting the next object from the
+        current object. This is esoteric and should probably be ignored.
 
         In the common case where you just want to process the value of
         the setting specified by ``name``, pass ``last_only=True``.
 
         """
-        obj = settings
-        keys = self._parse_path(name)
-        for k in keys[:-1]:
-            if visit_func is not None and not last_only:
-                visit_func(obj, k, NO_DEFAULT, args)
-            obj = obj[k]
-        last_k = keys[-1]
-        val = obj[last_k]
-        if visit_func is not None:
-            visit_func(obj, last_k, val, args)
+        segments = self._parse_path(name)
+        visit_segments = visit is not None
+        visit_all = not last_only
+        for segment, next_segment in zip(segments, segments[1:] + [None]):
+            val = obj[segment]
+            last = next_segment is None
+            if visit_segments and (visit_all or last):
+                result = visit(obj, segment, val, next_segment, args)
+                obj = result if result is not None else val
+            else:
+                obj = val
+        return obj
 
     def _interpolate(self, v, settings):
         if isinstance(v, string_types):
@@ -206,19 +228,19 @@ class Loader(Base):
         return v
 
     def _import_from_string(self, settings):
-        def visit_func(obj, key, val, args):
+        def visit(obj, key, val, next_key, args):
             if isinstance(val, string_types):
                 obj[key] = import_string(val)
         for name in settings.get('IMPORT_FROM_STRING', ()):
-            self._traverse(settings, name, visit_func, last_only=True)
+            self._traverse(settings, name, visit, last_only=True)
 
     def _append_extras(self, settings):
-        def visit_func(obj, key, val, args):
+        def visit(obj, key, val, next_key, args):
             obj[key] = val + args['extra_val']
         extras = settings.get('EXTRA', {})
         for name, extra_val in extras.items():
-            visit_func_args = {'extra_val': extra_val}
-            self._traverse(settings, name, visit_func, last_only=True, args=visit_func_args)
+            visit_args = {'extra_val': extra_val}
+            self._traverse(settings, name, visit, args=visit_args, last_only=True)
 
     def _convert_name(self, name):
         """Convert ``name`` to int if it looks like an int.
