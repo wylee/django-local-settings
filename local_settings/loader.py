@@ -132,24 +132,16 @@ class Loader(Base):
         """
         segments = []
         ipath = iter(path)
-
         for char in ipath:
-            if char == '(':
-                segment = []
-                end = ')'
-            else:
-                segment = [char]
-                end = '.'
-
+            segment, end = ([], ')') if char == '(' else ([char], '.')
             # Note: takewhile() consumes the end character
             segment.extend(takewhile(lambda c: c != end, ipath))
             segment = ''.join(segment)
             segment = self._convert_name(segment)
             segments.append(segment)
-
             if end == ')':
+                # Consume dot after right paren
                 next(ipath, None)
-
         return segments
 
     def _traverse(self, settings, name, visit_func=None, last_only=False, args=NO_DEFAULT):
