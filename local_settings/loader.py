@@ -42,7 +42,7 @@ class Loader(Base):
         settings.update(settings_from_file)
         return settings
 
-    def load(self, base_settings):
+    def load(self, base_settings: Mapping) -> OrderedDict:
         """Merge local settings from file with ``base_settings``.
 
         Returns a new OrderedDict containing the base settings and the
@@ -54,8 +54,6 @@ class Loader(Base):
 
         When a setting is overridden, it gets moved to the end.
 
-        TODO: Rewrite this using :meth:`_traverse`.
-
         """
         if not os.path.exists(self.file_name):
             self.print_warning(
@@ -64,52 +62,25 @@ class Loader(Base):
 
         settings = OrderedDict((k, v) for (k, v) in base_settings.items() if k.isupper())
 
-        for k, v in self.read_file().items():
-            obj = settings
-            names = self._parse_path(k)
-            value = self._parse_setting(v)
+        for name, value in self.read_file().items():
+            value = self._parse_setting(value)
 
-            for name, next_name in zip(names, names[1:] + [None]):
-                last = next_name is None
-
-                # Get default value based on the *next* segment name
-                if last:
-                    default = PLACEHOLDER
-                elif isinstance(next_name, int):
-                    default = [PLACEHOLDER] * (next_name + 1)
-                else:
-                    default = OrderedDict()
-
-                # Ensure there's an object in the current slot
-                if isinstance(obj, Mapping):
-                    if name not in obj:
-                        obj[name] = default
-                elif isinstance(obj, Sequence):
-                    while name >= len(obj):
-                        obj.append(PLACEHOLDER)
-                    if obj[name] is PLACEHOLDER:
-                        obj[name] = default
-
+            def visit(obj, segment, item, next_segment, args):
                 # Ensure newer settings are ordered after older settings
                 # so interpolation that depends on older settings will
                 # work in a deterministic way.
                 if isinstance(obj, OrderedDict):
-                    obj.move_to_end(name)
+                    obj.move_to_end(segment)
+                if next_segment is None:  # Reached setting
+                    obj[segment] = value
+                    # If there's already a LocalSetting in this slot, set the
+                    # value of that LocalSetting and put it in the registry so
+                    # it can be easily retrieved later.
+                    if isinstance(item, LocalSetting):
+                        item.value = value
+                        self.registry[item] = segment
 
-                if not last:
-                    obj = obj[name]
-
-            name = names[-1]
-            current_value = obj[name]
-
-            # If there's already a LocalSetting in this slot, set the
-            # value of that LocalSetting and put it in the registry so
-            # it can be easily retrieved later.
-            if isinstance(current_value, LocalSetting):
-                current_value.value = value
-                self.registry[current_value] = name
-
-            obj[name] = value
+            self._traverse(settings, name, visit=visit, create_missing=True, default=None)
 
         settings.pop('extends', None)
         self._interpolate(settings, settings)

@@ -3,6 +3,7 @@ import unittest
 from collections import OrderedDict
 
 from ..loader import Loader
+from ..types import LocalSetting
 
 
 LOCAL_SETTINGS_FILE = os.path.join(os.path.dirname(__file__), 'local.cfg#test')
@@ -57,30 +58,43 @@ class TestPathParsing(Base):
 class TestLoading(Base):
 
     def test_loading(self):
-        settings = self.loader.load({})
+        local_setting = LocalSetting('default value')
+        self.assertEqual(local_setting.default, 'default value')
+        self.assertEqual(local_setting.value, 'default value')
+
+        settings = self.loader.load({
+            'LOCAL_SETTING': local_setting,
+        })
+
         expected = OrderedDict((
             ('PACKAGE', 'local_settings'),
 
-            ('A', {
-                'b': {
-                    'c': 1,
-                    'd': 2,
-                }
-            }),
+            ('LOCAL_SETTING', 'local value'),
 
-            ('X', {
-                'y': {
-                    'z': '1',
-                },
-            }),
+            ('A', OrderedDict((
+                ('b', OrderedDict((
+                    ('c', 1),
+                    ('d', 2),
+                ))),
+            ))),
+
+            ('X', OrderedDict((
+                ('y', OrderedDict((
+                    ('z', '1'),
+                ))),
+            ))),
 
             ('LIST', ['a', 'b']),
 
-            ('TEMPLATES', [{
-                'BACKEND': 'package.module.Class',
-                'OPTIONS': {
-                    'context_processors': ['a.b', 'x.y.z'],
-                }
-            }])
+            ('TEMPLATES', [
+                OrderedDict((
+                    ('BACKEND', 'package.module.Class'),
+                    ('OPTIONS', OrderedDict((
+                        ('context_processors', ['a.b', 'x.y.z']),
+                    ))),
+                )),
+            ])
         ))
+        self.assertEqual(local_setting.default, 'default value')
+        self.assertEqual(local_setting.value, 'local value')
         self.assertEqual(list(settings.items()), list(expected.items()))
