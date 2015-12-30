@@ -8,3 +8,6 @@ init:
 
 test:
 	.env/bin/python -m unittest discover .
+
+coverage:
+	.env/bin/coverage run --source local_settings -m unittest discover . && coverage report

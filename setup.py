@@ -29,6 +29,7 @@ setup(
     install_requires=install_requires,
     extras_require={
         'dev': [
+            'coverage>=4',
             'django<1.9',
         ],
     },
