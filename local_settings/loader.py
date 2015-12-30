@@ -84,9 +84,9 @@ class Loader(Base):
 
         settings.pop('extends', None)
         self._interpolate(settings, settings)
-        self._import_from_string(settings)
         self._append_extras(settings)
         self._swap_list_items(settings)
+        self._import_from_string(settings)
         return settings
 
     def _parse_path(self, path):
