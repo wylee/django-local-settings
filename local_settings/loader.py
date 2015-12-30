@@ -86,6 +86,7 @@ class Loader(Base):
         self._interpolate(settings, settings)
         self._import_from_string(settings)
         self._append_extras(settings)
+        self._swap_list_items(settings)
         return settings
 
     def _parse_path(self, path):
@@ -278,12 +279,30 @@ class Loader(Base):
             if not isinstance(val, Sequence):
                 raise TypeError('EXTRA only works with list-type settings')
             extra_val = args['extra_val']
-            if extra_val is not None:
+            if extra_val:
                 obj[key] = val + extra_val
 
         for name, extra_val in extras.items():
             visit_args = {'extra_val': extra_val}
             self._traverse(settings, name, visit, args=visit_args, last_only=True)
+
+    def _swap_list_items(self, settings):
+        swap = settings.get('SWAP')
+        if not swap:
+            return
+
+        def visit(obj, key, val, next_key, args):
+            if not isinstance(val, Sequence):
+                raise TypeError('SWAP only works with list-type settings')
+            swap_map = args['swap_map']
+            if swap_map:
+                for old_item, new_item in swap_map.items():
+                    k = val.index(old_item)
+                    val[k] = new_item
+
+        for name, swap_map in swap.items():
+            args = {'swap_map': swap_map}
+            self._traverse(settings, name, visit, args=args, last_only=True)
 
     def _convert_name(self, name):
         """Convert ``name`` to int if it looks like an int.
