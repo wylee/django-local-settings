@@ -258,10 +258,15 @@ class Loader(Base):
         return v
 
     def _import_from_string(self, settings):
+        import_ = settings.get('IMPORT_FROM_STRING')
+        if not import_:
+            return
+
         def visit(obj, key, val, next_key, args):
             if isinstance(val, string_types):
                 obj[key] = import_string(val)
-        for name in settings.get('IMPORT_FROM_STRING', ()):
+
+        for name in import_:
             self._traverse(settings, name, visit, last_only=True)
 
     def _append_extras(self, settings):
