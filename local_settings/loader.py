@@ -270,9 +270,17 @@ class Loader(Base):
             self._traverse(settings, name, visit, last_only=True)
 
     def _append_extras(self, settings):
+        extras = settings.get('EXTRA')
+        if not extras:
+            return
+
         def visit(obj, key, val, next_key, args):
-            obj[key] = val + args['extra_val']
-        extras = settings.get('EXTRA', {})
+            if not isinstance(val, Sequence):
+                raise TypeError('EXTRA only works with list-type settings')
+            extra_val = args['extra_val']
+            if extra_val is not None:
+                obj[key] = val + extra_val
+
         for name, extra_val in extras.items():
             visit_args = {'extra_val': extra_val}
             self._traverse(settings, name, visit, args=visit_args, last_only=True)
