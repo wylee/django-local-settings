@@ -89,52 +89,7 @@ class Loader(Base):
         self._import_from_string(settings)
         return settings
 
-    def _parse_path(self, path):
-        """Parse ``path`` into segments.
-
-        Paths must start with a WORD (i.e., a top level Django setting
-        name). Path segments are separated by dots. Compound path
-        segments (i.e., a name with a dot in it) can be grouped inside
-        parentheses.
-
-        Examples::
-
-            >>> loader = Loader()
-            >>> loader._parse_path('WORD')
-            ['WORD']
-            >>> loader._parse_path('WORD.x')
-            ['WORD', 'x']
-            >>> loader._parse_path('WORD.(x)')
-            ['WORD', 'x']
-            >>> loader._parse_path('WORD.(x.y)')
-            ['WORD', 'x.y']
-            >>> loader._parse_path('WORD.(x.y).z')
-            ['WORD', 'x.y', 'z']
-
-        An example of where compound names are actually useful is in
-        logger settings::
-
-            LOGGING.loggers.(package.module).handlers = ["console"]
-            LOGGING.loggers.(package.module).level = "DEBUG"
-
-        Any segment that looks like an int will be converted to an int.
-        Segments that start with a leading '0' followed by other digits
-        will not be converted.
-
-        """
-        segments = []
-        ipath = iter(path)
-        for char in ipath:
-            segment, end = ([], ')') if char == '(' else ([char], '.')
-            # Note: takewhile() consumes the end character
-            segment.extend(takewhile(lambda c: c != end, ipath))
-            segment = ''.join(segment)
-            segment = self._convert_name(segment)
-            segments.append(segment)
-            if end == ')':
-                # Consume dot after right paren
-                next(ipath, None)
-        return segments
+    # Traversal
 
     def _traverse(self, obj, name, visit=None, args=None, last_only=False, create_missing=False,
                   default=NO_DEFAULT):
@@ -245,6 +200,68 @@ class Loader(Base):
                 obj[segment] = default
         return obj[segment]
 
+    def _parse_path(self, path):
+        """Parse ``path`` into segments.
+
+        Paths must start with a WORD (i.e., a top level Django setting
+        name). Path segments are separated by dots. Compound path
+        segments (i.e., a name with a dot in it) can be grouped inside
+        parentheses.
+
+        Examples::
+
+            >>> loader = Loader()
+            >>> loader._parse_path('WORD')
+            ['WORD']
+            >>> loader._parse_path('WORD.x')
+            ['WORD', 'x']
+            >>> loader._parse_path('WORD.(x)')
+            ['WORD', 'x']
+            >>> loader._parse_path('WORD.(x.y)')
+            ['WORD', 'x.y']
+            >>> loader._parse_path('WORD.(x.y).z')
+            ['WORD', 'x.y', 'z']
+
+        An example of where compound names are actually useful is in
+        logger settings::
+
+            LOGGING.loggers.(package.module).handlers = ["console"]
+            LOGGING.loggers.(package.module).level = "DEBUG"
+
+        Any segment that looks like an int will be converted to an int.
+        Segments that start with a leading '0' followed by other digits
+        will not be converted.
+
+        """
+        segments = []
+        ipath = iter(path)
+        for char in ipath:
+            segment, end = ([], ')') if char == '(' else ([char], '.')
+            # Note: takewhile() consumes the end character
+            segment.extend(takewhile(lambda c: c != end, ipath))
+            segment = ''.join(segment)
+            segment = self._convert_name(segment)
+            segments.append(segment)
+            if end == ')':
+                # Consume dot after right paren
+                next(ipath, None)
+        return segments
+
+    def _convert_name(self, name):
+        """Convert ``name`` to int if it looks like an int.
+
+        Otherwise, return it as is.
+
+        """
+        if re.search('^\d+$', name):
+            if len(name) > 1 and name[0] == '0':
+                # Don't treat strings beginning with "0" as ints
+                return name
+            return int(name)
+        return name
+
+    # Post-processing
+
     def _interpolate(self, v, settings):
         if isinstance(v, string_types):
             v = v.format(**settings)
@@ -257,18 +274,6 @@ class Loader(Base):
         elif isinstance(v, Sequence):
             v = v.__class__(self._interpolate(item, settings) for item in v)
         return v
-
-    def _import_from_string(self, settings):
-        import_ = settings.get('IMPORT_FROM_STRING')
-        if not import_:
-            return
-
-        def visit(obj, key, val, next_key, args):
-            if isinstance(val, string_types):
-                obj[key] = import_string(val)
-
-        for name in import_:
-            self._traverse(settings, name, visit, last_only=True)
 
     def _append_extras(self, settings):
         extras = settings.get('EXTRA')
@@ -304,15 +309,14 @@ class Loader(Base):
             args = {'swap_map': swap_map}
             self._traverse(settings, name, visit, args=args, last_only=True)
 
-    def _convert_name(self, name):
-        """Convert ``name`` to int if it looks like an int.
+    def _import_from_string(self, settings):
+        import_ = settings.get('IMPORT_FROM_STRING')
+        if not import_:
+            return
 
-        Otherwise, return it as is.
+        def visit(obj, key, val, next_key, args):
+            if isinstance(val, string_types):
+                obj[key] = import_string(val)
 
-        """
-        if re.search('^\d+$', name):
-            if len(name) > 1 and name[0] == '0':
-                # Don't treat strings beginning with "0" as ints
-                return name
-            return int(name)
-        return name
+        for name in import_:
+            self._traverse(settings, name, visit, last_only=True)
