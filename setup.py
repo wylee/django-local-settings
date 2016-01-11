@@ -3,8 +3,12 @@ import sys
 from setuptools import find_packages, setup
 
 
-with open('README.md') as fp:
-    long_description = fp.read()
+with open('VERSION') as version_fp:
+    VERSION = version_fp.read().strip()
+
+
+with open('README.md') as readme_fp:
+    long_description = readme_fp.read()
 
 
 install_requires = [
@@ -19,7 +23,7 @@ if sys.version_info[:2] < (2, 7):
 
 setup(
     name='django-local-settings',
-    version='1.0a13',
+    version=VERSION,
     author='Wyatt Baldwin',
     author_email='wyatt.baldwin@pdx.edu',
     url='https://github.com/PSU-OIT-ARC/django-local-settings',
