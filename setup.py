@@ -25,7 +25,7 @@ setup(
     name='django-local-settings',
     version=VERSION,
     author='Wyatt Baldwin',
-    author_email='wyatt.baldwin@pdx.edu',
+    author_email='wbaldwin@pdx.edu',
     url='https://github.com/PSU-OIT-ARC/django-local-settings',
     description='A system for dealing with local settings in Django projects',
     long_description=long_description,
