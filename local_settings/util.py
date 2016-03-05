@@ -1,3 +1,4 @@
+import io
 import os
 
 
@@ -19,3 +20,21 @@ def get_file_name():
     if not file_name:
         file_name = os.path.join(os.getcwd(), 'local.cfg')
     return file_name
+
+
+# These TTY functions were copied from Invoke
+
+
+def is_a_tty(stream):
+    if hasattr(stream, 'isatty') and callable(stream.isatty):
+        return stream.isatty()
+    elif has_fileno(stream):
+        return os.isatty(stream.fileno())
+    return False
+
+
+def has_fileno(stream):
+    try:
+        return isinstance(stream.fileno(), int)
+    except (AttributeError, io.UnsupportedOperation):
+        return False

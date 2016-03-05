@@ -8,12 +8,13 @@ from .checker import Checker
 from .exc import LocalSettingsError, SettingsFileNotFoundError
 from .loader import Loader
 from .types import LocalSetting, SecretSetting
-from .util import NO_DEFAULT, get_file_name
+from .util import NO_DEFAULT  # noqa: exported
+from .util import get_file_name
 from .__main__ import make_local_settings
 
 
 def load_and_check_settings(base_settings,  file_name=None, section=None, base_path=None,
-                            quiet=NO_DEFAULT):
+                            prompt=None, quiet=None):
     """Merge local settings from file with base settings, then check.
 
     Returns a new OrderedDict containing the base settings and the
@@ -41,14 +42,24 @@ def load_and_check_settings(base_settings,  file_name=None, section=None, base_p
     ``base_path`` is used when ``file_name`` is relative; if it's not
     passed, it will be set to the current working directory.
 
+    When ``prompt`` is ``True``, the user will be prompted for missing
+    local settings. By default, the user is prompted only when running
+    on TTY. The ``LOCAL_SETTINGS_CONFIG_PROMPT`` environment variable
+    can be used to set ``prompt``.
+
     When ``quiet`` is ``True``, informational messages will not be
-    printed. The ``LOCAL_SETTINGS_CONFIG_QUIET`` can be used to set
-    ``quiet`` (use a JSON value like 'true', '1', 'false', or '0').
+    printed. The ``LOCAL_SETTINGS_CONFIG_QUIET`` environment variable
+    can be used to set ``quiet``.
+
+    .. note:: When setting flags via environment variables, use a JSON
+        value like 'true', '1', 'false', or '0'.
 
     See :meth:`.Loader.load` and :meth:`.Checker.check` for more info.
 
     """
-    if quiet is NO_DEFAULT:
+    if prompt is None:
+        prompt = json.loads(os.environ.get('LOCAL_SETTINGS_CONFIG_PROMPT', 'null'))
+    if quiet is None:
         quiet = json.loads(os.environ.get('LOCAL_SETTINGS_CONFIG_QUIET', 'false'))
     if not quiet:
         printer = ColorPrinter()
@@ -69,7 +80,7 @@ def load_and_check_settings(base_settings,  file_name=None, section=None, base_p
         else:
             settings = loader.load(base_settings)
             registry = loader.registry
-        checker = Checker(file_name, section, registry=registry)
+        checker = Checker(file_name, section, registry=registry, prompt=prompt)
         success = checker.check(settings)
     except KeyboardInterrupt:
         # Loading/checking of local settings was aborted with Ctrl-C.

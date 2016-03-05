@@ -8,20 +8,22 @@ from six.moves import input
 
 from .base import Base
 from .types import LocalSetting
-from .util import NO_DEFAULT
+from .util import NO_DEFAULT, is_a_tty
 
 
 class Checker(Base):
 
-    def __init__(self, file_name=None, section=None, extender=None, registry=None):
+    def __init__(self, file_name=None, section=None, extender=None, registry=None, prompt=None):
         super(Checker, self).__init__(file_name, section, extender)
         if registry is None:
             registry = {}
         self.registry = registry
-        try:
-            self.on_a_tty = sys.stdin.isatty() and sys.stdout.isatty()
-        except AttributeError:
-            self.on_a_tty = False
+        if prompt is None:
+            try:
+                prompt = is_a_tty(sys.stdin) and is_a_tty(sys.stdout)
+            except AttributeError:
+                prompt = False
+        self.prompt = prompt
 
     def check(self, obj, prefix=None):
         """Recursively look for :class:`.LocalSetting`s in ``obj``.
@@ -88,11 +90,11 @@ class Checker(Base):
                             {default_name: local_setting.derived_default},
                             None, settings_to_write, missing)
 
-                if self.on_a_tty:
+                if self.prompt:
                     self.print_header('=' * 79)
 
                 if local_setting.prompt:  # prompt for value
-                    if self.on_a_tty:
+                    if self.prompt:
                         v, is_set = self.prompt_for_value(name, v)
                 elif local_setting.has_default:  # use default w/o prompting
                     v, is_set = local_setting.default, True
