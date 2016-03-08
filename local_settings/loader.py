@@ -262,18 +262,18 @@ class Loader(Base):
 
     # Post-processing
 
-    def _interpolate(self, v, settings):
-        if isinstance(v, string_types):
-            v = v.format(**settings)
-        elif isinstance(v, Mapping):
-            for k in v:
+    def _interpolate(self, obj, settings):
+        if isinstance(obj, string_types):
+            obj = obj.format(**settings)
+        elif isinstance(obj, Mapping):
+            for k in obj:
                 new_k = k.format(**settings)
-                v[new_k] = self._interpolate(v[k], settings)
+                obj[new_k] = self._interpolate(obj[k], settings)
                 if k != new_k:
-                    del v[k]
-        elif isinstance(v, Sequence):
-            v = v.__class__(self._interpolate(item, settings) for item in v)
-        return v
+                    del obj[k]
+        elif isinstance(obj, Sequence):
+            obj = obj.__class__(self._interpolate(item, settings) for item in obj)
+        return obj
 
     def _append_extras(self, settings):
         extras = settings.get('EXTRA')
