@@ -266,11 +266,15 @@ class Loader(Base):
         if isinstance(obj, string_types):
             obj = obj.format(**settings)
         elif isinstance(obj, Mapping):
-            for k in obj:
+            replacements = OrderedDict()
+            for k, v in obj.items():
+                obj[k] = self._interpolate(v, settings)
                 new_k = k.format(**settings)
-                obj[new_k] = self._interpolate(obj[k], settings)
                 if k != new_k:
-                    del obj[k]
+                    replacements[k] = new_k
+            for k, new_k in replacements.items():
+                obj[new_k] = obj[k]
+                del obj[k]
         elif isinstance(obj, Sequence):
             obj = obj.__class__(self._interpolate(item, settings) for item in obj)
         return obj
