@@ -269,9 +269,10 @@ class Loader(Base):
             replacements = OrderedDict()
             for k, v in obj.items():
                 obj[k] = self._interpolate(v, settings)
-                new_k = k.format(**settings)
-                if k != new_k:
-                    replacements[k] = new_k
+                if isinstance(k, str):
+                    new_k = k.format(**settings)
+                    if k != new_k:
+                        replacements[k] = new_k
             for k, new_k in replacements.items():
                 obj[new_k] = obj[k]
                 del obj[k]
