@@ -79,10 +79,7 @@ class Base(ColorPrinter):
         self.section = section
 
     def _make_parser(self, *args, **kwargs):
-        kwargs.setdefault('interpolation', ExtendedInterpolation())
-        parser = ConfigParser(*args, **kwargs)
-        parser.optionxform = lambda option: option
-        return parser
+        return LocalSettingsConfigParser(*args, **kwargs)
 
     def _parse_setting(self, v):
         """Parse the string ``v`` and return the parsed value.
@@ -101,3 +98,13 @@ class Base(ColorPrinter):
         except ValueError:
             raise ValueError('Could not parse `{0}` as JSON'.format(v))
         return v
+
+
+class LocalSettingsConfigParser(ConfigParser):
+
+    def __init__(self, *args, interpolation=ExtendedInterpolation(), **kwargs):
+        kwargs['interpolation'] = interpolation
+        super().__init__(*args, **kwargs)
+
+    def optionxform(self, option):
+        return option
