@@ -67,9 +67,9 @@ class TestLoading(Base):
         })
 
         expected = OrderedDict((
-            ('PACKAGE', 'local_settings'),
-
             ('LOCAL_SETTING', 'local value'),
+
+            ('PACKAGE', 'local_settings'),
 
             ('A', OrderedDict((
                 ('b', OrderedDict((
@@ -93,7 +93,16 @@ class TestLoading(Base):
                         ('context_processors', ['a.b', 'x.y.z']),
                     ))),
                 )),
-            ])
+            ]),
+
+            ('INTERPOLATED', OrderedDict((
+                ('x', 'value'),
+                ('y', 'value'),
+                ('z', 'value'),
+            ))),
+
+            ('Z', [{'value': 1}]),
+            ('value', "interpolated key"),
         ))
         self.assertEqual(local_setting.default, 'default value')
         self.assertEqual(local_setting.value, 'local value')

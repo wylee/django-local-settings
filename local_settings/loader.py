@@ -1,6 +1,6 @@
 import os
 import re
-from collections import Mapping, OrderedDict, Sequence
+from collections import Mapping, MutableSequence, OrderedDict, Sequence
 from itertools import takewhile
 
 from django.utils.module_loading import import_string
@@ -66,11 +66,6 @@ class Loader(Base):
             value = self._parse_setting(value)
 
             def visit(obj, segment, item, next_segment, args):
-                # Ensure newer settings are ordered after older settings
-                # so interpolation that depends on older settings will
-                # work in a deterministic way.
-                if isinstance(obj, OrderedDict):
-                    obj.move_to_end(segment)
                 if next_segment is None:  # Reached setting
                     obj[segment] = value
                     # If there's already a LocalSetting in this slot, set the
@@ -83,7 +78,7 @@ class Loader(Base):
             self._traverse(settings, name, visit=visit, create_missing=True, default=None)
 
         settings.pop('extends', None)
-        self._interpolate(settings, settings)
+        self._interpolate(settings)
         self._append_extras(settings)
         self._swap_list_items(settings)
         self._import_from_string(settings)
@@ -262,23 +257,45 @@ class Loader(Base):
 
     # Post-processing
 
-    def _interpolate(self, obj, settings):
+    def _interpolate(self, settings):
+        interpolated = True
+        while interpolated:
+            interpolated = []
+            self._interpolate_values(settings, settings, interpolated)
+        self._interpolate_keys(settings, settings)
+
+    def _interpolate_values(self, obj, settings, interpolated):
         if isinstance(obj, string_types):
-            obj = obj.format(**settings)
+            new_value = obj.format(**settings)
+            if new_value != obj:
+                obj = new_value
+                interpolated.append((obj, new_value))
         elif isinstance(obj, Mapping):
-            replacements = OrderedDict()
             for k, v in obj.items():
-                obj[k] = self._interpolate(v, settings)
+                obj[k] = self._interpolate_values(v, settings, interpolated)
+        elif isinstance(obj, MutableSequence):
+            for i, item in enumerate(obj):
+                obj[i] = self._interpolate_values(item, settings, interpolated)
+        elif isinstance(obj, Sequence):
+            obj = obj.__class__(
+                self._interpolate_values(item, settings, interpolated) for item in obj)
+        return obj
+
+    def _interpolate_keys(self, obj, settings):
+        if isinstance(obj, Mapping):
+            replacements = {}
+            for k, v in obj.items():
                 if isinstance(k, str):
                     new_k = k.format(**settings)
                     if k != new_k:
                         replacements[k] = new_k
+                self._interpolate_keys(v, settings)
             for k, new_k in replacements.items():
                 obj[new_k] = obj[k]
                 del obj[k]
-        elif isinstance(obj, Sequence):
-            obj = obj.__class__(self._interpolate(item, settings) for item in obj)
-        return obj
+        elif isinstance(obj, Sequence) and not isinstance(obj, string_types):
+            for item in obj:
+                self._interpolate_keys(item, settings)
 
     def _append_extras(self, settings):
         extras = settings.get('EXTRA')
