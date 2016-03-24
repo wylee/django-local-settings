@@ -31,10 +31,7 @@ class Loader(Base):
         settings = OrderedDict()
         if extends:
             extends = self._parse_setting(extends)
-            if isinstance(extends, str):
-                extends = [extends]
-            for e in reversed(extends):
-                settings.update(self.__class__(e, extender=self).read_file())
+            settings.update(self.__class__(extends, extender=self).read_file())
         settings_from_file = parser[self.section]
         remove = [k for k in settings if k in settings_from_file]
         for k in remove:
