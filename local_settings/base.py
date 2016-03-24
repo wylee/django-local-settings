@@ -1,7 +1,7 @@
 import json
 import os.path
 import pkg_resources
-from configparser import ConfigParser, ExtendedInterpolation
+from configparser import RawConfigParser
 
 from .color_printer import ColorPrinter
 from .util import get_file_name
@@ -100,11 +100,7 @@ class Base(ColorPrinter):
         return v
 
 
-class LocalSettingsConfigParser(ConfigParser):
-
-    def __init__(self, *args, interpolation=ExtendedInterpolation(), **kwargs):
-        kwargs['interpolation'] = interpolation
-        super().__init__(*args, **kwargs)
+class LocalSettingsConfigParser(RawConfigParser):
 
     def optionxform(self, option):
         return option
