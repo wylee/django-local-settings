@@ -50,11 +50,6 @@ class Loader(Base):
             - settings from file
 
         """
-        if not os.path.exists(self.file_name):
-            self.print_warning(
-                'Local settings file `{0}` not found'.format(self.file_name))
-            return
-
         settings = OrderedDict((k, v) for (k, v) in base_settings.items() if k.isupper())
 
         for name, value in self.read_file().items():
