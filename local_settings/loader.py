@@ -49,8 +49,6 @@ class Loader(Base):
             - settings from extended file(s), if any
             - settings from file
 
-        When a setting is overridden, it gets moved to the end.
-
         """
         if not os.path.exists(self.file_name):
             self.print_warning(
