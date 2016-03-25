@@ -14,11 +14,11 @@ from .__main__ import make_local_settings
 
 
 def load_and_check_settings(base_settings,  file_name=None, section=None, base_path=None,
-                            prompt=None, quiet=None):
+                            prompt=None, quiet=None) -> dict:
     """Merge local settings from file with base settings, then check.
 
-    Returns a new OrderedDict containing the base settings and the
-    loaded settings. Ordering is:
+    Returns a new dict containing the base settings and the loaded
+    settings. Includes:
 
         - base settings
         - settings from extended file(s), if any

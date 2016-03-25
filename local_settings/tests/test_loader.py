@@ -1,6 +1,5 @@
 import os
 import unittest
-from collections import OrderedDict
 
 from ..loader import Loader
 from ..types import LocalSetting
@@ -66,44 +65,44 @@ class TestLoading(Base):
             'LOCAL_SETTING': local_setting,
         })
 
-        expected = OrderedDict((
-            ('LOCAL_SETTING', 'local value'),
+        expected = {
+            'LOCAL_SETTING': 'local value',
 
-            ('PACKAGE', 'local_settings'),
+            'PACKAGE': 'local_settings',
 
-            ('A', OrderedDict((
-                ('b', OrderedDict((
-                    ('c', 1),
-                    ('d', 2),
-                ))),
-            ))),
+            'A': {
+                'b': {
+                    'c': 1,
+                    'd': 2,
+                },
+            },
 
-            ('X', OrderedDict((
-                ('y', OrderedDict((
-                    ('z', '1'),
-                ))),
-            ))),
+            'X': {
+                'y': {
+                    'z': '1',
+                },
+            },
 
-            ('LIST', ['a', 'b']),
+            'LIST': ['a', 'b'],
 
-            ('TEMPLATES', [
-                OrderedDict((
-                    ('BACKEND', 'package.module.Class'),
-                    ('OPTIONS', OrderedDict((
-                        ('context_processors', ['a.b', 'x.y.z']),
-                    ))),
-                )),
-            ]),
+            'TEMPLATES': [
+                {
+                    'BACKEND': 'package.module.Class',
+                    'OPTIONS': {
+                        'context_processors': ['a.b', 'x.y.z'],
+                    },
+                },
+            ],
 
-            ('INTERPOLATED', OrderedDict((
-                ('x', 'value'),
-                ('y', 'value'),
-                ('z', 'value'),
-            ))),
+            'INTERPOLATED': {
+                'x': 'value',
+                'y': 'value',
+                'z': 'value',
+            },
 
-            ('Z', [{'value': 1}]),
-            ('value', "interpolated key"),
-        ))
+            'Z': [{'value': 1}],
+            'value': 'interpolated key',
+        }
         self.assertEqual(local_setting.default, 'default value')
         self.assertEqual(local_setting.value, 'local value')
-        self.assertEqual(list(settings.items()), list(expected.items()))
+        self.assertEqual(settings, expected)

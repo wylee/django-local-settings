@@ -1,6 +1,6 @@
 import os
 import re
-from collections import Mapping, MutableSequence, OrderedDict, Sequence
+from collections import Mapping, MutableSequence, Sequence
 from itertools import takewhile
 
 from django.utils.module_loading import import_string
@@ -28,29 +28,26 @@ class Loader(Base):
         with open(self.file_name) as fp:
             parser.read_file(fp)
         extends = parser[self.section].get('extends')
-        settings = OrderedDict()
+        settings = {}
         if extends:
             extends = self._parse_setting(extends)
             settings.update(self.__class__(extends, extender=self).read_file())
         settings_from_file = parser[self.section]
-        remove = [k for k in settings if k in settings_from_file]
-        for k in remove:
-            del settings[k]
         settings.update(settings_from_file)
         return settings
 
-    def load(self, base_settings: Mapping) -> OrderedDict:
+    def load(self, base_settings: Mapping) -> dict:
         """Merge local settings from file with ``base_settings``.
 
-        Returns a new OrderedDict containing the base settings and the
-        loaded settings. Ordering is:
+        Returns a new dict containing the base settings and the loaded
+        settings. Includes:
 
             - base settings
             - settings from extended file(s), if any
             - settings from file
 
         """
-        settings = OrderedDict((k, v) for (k, v) in base_settings.items() if k.isupper())
+        settings = {k: v for (k, v) in base_settings.items() if k.isupper()}
 
         for name, value in self.read_file().items():
             value = self._parse_setting(value)
@@ -167,14 +164,14 @@ class Loader(Base):
 
         If the next segment is an int, the default will be a list with
         the indicated number of items. Otherwise the default will be
-        an OrderedDict.
+        a dict.
 
         """
         if default is NO_DEFAULT:
             if isinstance(next_segment, int):
                 default = [PLACEHOLDER] * (next_segment + 1)
             else:
-                default = OrderedDict()
+                default = {}
         if isinstance(obj, Mapping):
             if segment not in obj:
                 obj[segment] = default
