@@ -93,3 +93,6 @@ class ColorPrinter(object):
         if end:
             string += end
         return string
+
+
+color_printer = ColorPrinter()
