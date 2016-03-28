@@ -4,6 +4,8 @@ import sys
 
 from six import add_metaclass
 
+from .util import is_a_tty
+
 
 class ColorPrinterMeta(type):
 
@@ -68,11 +70,7 @@ class ColorPrinter(object):
         """
         color = kwargs.pop('color', None)
         file = kwargs.get('file', sys.stdout)
-        try:
-            is_a_tty = file.isatty()
-        except AttributeError:
-            is_a_tty = False
-        if color and is_a_tty:
+        if color and is_a_tty(file):
             string = self.string(color, *args, **kwargs)
             print(string, **kwargs)
         else:
