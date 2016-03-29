@@ -7,6 +7,7 @@ from six import string_types
 from six.moves import input
 
 from .base import Base
+from .color_printer import color_printer as printer
 from .types import LocalSetting
 from .util import NO_DEFAULT, is_a_tty
 
@@ -44,8 +45,7 @@ class Checker(Base):
             self.write_settings(settings_to_write)
         if missing:
             for name, local_setting in missing.items():
-                self.print_error(
-                    'Local setting `{name}` must be set'.format(name=name))
+                printer.print_error('Local setting `{name}` must be set'.format(name=name))
             return False
         return True
 
@@ -91,7 +91,7 @@ class Checker(Base):
                             None, settings_to_write, missing)
 
                 if self.prompt:
-                    self.print_header('=' * 79)
+                    printer.print_header('=' * 79)
 
                 if local_setting.prompt:  # prompt for value
                     if self.prompt:
@@ -103,7 +103,7 @@ class Checker(Base):
                         '`{name}`'.format(name=name, value=v))
                     if local_setting.derived_default:
                         msg += ' (derived from {0})'.format(default_name)
-                    self.print_warning(msg)
+                    printer.print_warning(msg)
 
                 if is_set:
                     local_setting.value = obj[k] = settings_to_write[name] = v
@@ -115,33 +115,31 @@ class Checker(Base):
     def prompt_for_value(self, name, local_setting):
         v, is_set = NO_DEFAULT, False
         while not is_set:  # Keep prompting until valid value is set
-            self.print_header(
-                'Enter a value for the local setting `{name}` (as JSON)'
-                .format(name=name))
+            printer.print_header(
+                'Enter a value for the local setting `{name}` (as JSON)'.format(name=name))
             if local_setting.doc:
-                self.print_header('Doc:', local_setting.doc)
+                printer.print_header('Doc:', local_setting.doc)
             if local_setting.has_default:
                 msg = 'Hit enter to use default: `{0!r}`'.format(local_setting.default)
                 if local_setting.derived_default:
                     default_name = self.registry[local_setting.derived_default]
                     msg += ' (derived from {0})'.format(default_name)
-                self.print_header(msg)
+                printer.print_header(msg)
             v = input('> ').strip()
             if v:
                 try:
                     v = self._parse_setting(v)
                 except ValueError as e:
-                    self.print_error(e)
+                    printer.print_error(e)
                 else:
                     is_set = local_setting.validate(v)
                     if not is_set:
-                        self.print_error('`{0}` is not a valid value for {1}'.format(v, name))
+                        printer.print_error('`{0}` is not a valid value for {1}'.format(v, name))
             elif local_setting.has_default:
                 v, is_set = local_setting.default, True
-                self.print_info('Using default value for `{0}`'.format(name))
+                printer.print_info('Using default value for `{0}`'.format(name))
             else:
-                self.print_error(
-                    'You must enter a value for `{0}`'.format(name))
+                printer.print_error('You must enter a value for `{0}`'.format(name))
         return v, is_set
 
     def write_settings(self, settings):
@@ -150,11 +148,9 @@ class Checker(Base):
             with open(self.file_name) as fp:
                 parser.read_file(fp)
         else:
-            self.print_info(
-                'Creating new local settings file: `{0.file_name}`'
-                .format(self))
+            printer.print_info('Creating new local settings file: `{0.file_name}`'.format(self))
         if self.section not in parser:
-            self.print_info('Adding new section: `{0.section}`'.format(self))
+            printer.print_info('Adding new section: `{0.section}`'.format(self))
             parser.add_section(self.section)
         sorted_keys = sorted(settings.keys())
         for name in sorted_keys:
@@ -165,6 +161,5 @@ class Checker(Base):
             parser.write(fp)
         for name in sorted_keys:
             value = settings[name]
-            self.print_success(
-                'Saved `{name}` to local config file as `{value}`'
-                .format(**locals()))
+            printer.print_success(
+                'Saved `{name}` to local config file as `{value}`'.format(**locals()))

@@ -3,13 +3,12 @@ import os.path
 import pkg_resources
 from configparser import RawConfigParser
 
-from .color_printer import ColorPrinter
 from .util import get_file_name
 
 
-class Base(ColorPrinter):
+class Base:
 
-    def __init__(self, file_name=None, section=None, extender=None, colors=None):
+    def __init__(self, file_name=None, section=None, extender=None):
         """Initialize config file name and section.
 
         The file name will be selected from the following list, in order
@@ -40,8 +39,6 @@ class Base(ColorPrinter):
             - [DEFAULT]
 
         """
-        super(Base, self).__init__(colors)
-
         if not file_name:
             file_name = get_file_name()
             parsed_section = None
