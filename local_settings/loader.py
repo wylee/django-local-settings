@@ -266,7 +266,10 @@ class Loader(Base):
 
     def _interpolate_values(self, obj, settings, interpolated):
         if isinstance(obj, string_types):
-            new_value = obj.format(**settings)
+            try:
+                new_value = obj.format(**settings)
+            except KeyError:
+                new_value = obj
             if new_value != obj:
                 obj = new_value
                 interpolated.append((obj, new_value))
