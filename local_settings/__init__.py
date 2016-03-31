@@ -5,7 +5,7 @@ import sys
 
 from .color_printer import ColorPrinter
 from .checker import Checker
-from .exc import LocalSettingsError, SettingsFileNotFoundError
+from .exc import SettingsFileDidNotPassCheck, SettingsFileNotFoundError
 from .loader import Loader
 from .settings import Settings
 from .strategy import INIJSONStrategy
@@ -83,8 +83,7 @@ def load_and_check_settings(base_settings, file_name=None, section=None, base_pa
             printer.print_warning('\nAborted loading/checking of local settings')
         sys.exit(0)
     if not success:
-        raise LocalSettingsError(
-            'Could not load local settings from {0}'.format(file_name))
+        raise SettingsFileDidNotPassCheck(file_name)
     if not quiet:
         printer.print_success('Settings loaded successfully from {0}'.format(file_name))
     return settings
