@@ -3,7 +3,7 @@ import os
 import pkg_resources
 import sys
 
-from .color_printer import ColorPrinter
+from .color_printer import color_printer as printer
 from .exc import SettingsFileDidNotPassCheck
 from .loader import Loader
 from .settings import Settings
@@ -66,8 +66,6 @@ def load_and_check_settings(base_settings, file_name=None, section=None, base_pa
         prompt = json.loads(os.environ.get('LOCAL_SETTINGS_CONFIG_PROMPT', 'null'))
     if quiet is None:
         quiet = json.loads(os.environ.get('LOCAL_SETTINGS_CONFIG_QUIET', 'false'))
-    if not quiet:
-        printer = ColorPrinter()
     if file_name is None:
         file_name = get_file_name()
     if ':' in file_name:
