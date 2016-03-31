@@ -34,12 +34,21 @@ class ColorPrinter(object):
 
         >>> printer = ColorPrinter()
         >>> printer.print('boring old message')
-        'boring old message'
+        boring old message
+        >>> printer.string('none', 'boring old message')
+        'boring old message\\x1b[0m'
         >>> printer.print_info('check this out')
+        check this out
         >>> printer.print_error('whoopsie')
+        whoopsie
+        >>> printer.string('error', 'whoopsie')
+        '\\x1b[91mwhoopsie\\x1b[0m'
         >>> MyClass = type('MyClass', (ColorPrinter,), {})
         >>> my_obj = MyClass(colors={'header': '\033[96m'})
         >>> my_obj.print_header('Header')
+        Header
+        >>> my_obj.string('header', 'Header')
+        '\\x1b[96mHeader\\x1b[0m'
 
     Note: This uses the print function from Python 3.
 
