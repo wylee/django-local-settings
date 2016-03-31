@@ -1,5 +1,3 @@
-import json
-import os
 import sys
 from collections import Mapping, Sequence
 
@@ -8,17 +6,16 @@ from six.moves import input
 
 from .base import Base
 from .color_printer import color_printer as printer
+from .strategy import INIJSONStrategy
 from .types import LocalSetting
 from .util import NO_DEFAULT, is_a_tty
 
 
 class Checker(Base):
 
-    def __init__(self, file_name=None, section=None, extender=None, registry=None, prompt=None):
-        super(Checker, self).__init__(file_name, section, extender)
-        if registry is None:
-            registry = {}
-        self.registry = registry
+    def __init__(self, file_name, section=None, registry=None, strategy_type=INIJSONStrategy,
+                 prompt=None):
+        super(Checker, self).__init__(file_name, section, registry, strategy_type)
         if prompt is None:
             try:
                 prompt = is_a_tty(sys.stdin) and is_a_tty(sys.stdout)
@@ -42,7 +39,7 @@ class Checker(Base):
         self._populate_registry(obj, prefix)
         settings_to_write, missing = self._check(obj, prefix, {}, {})
         if settings_to_write:
-            self.write_settings(settings_to_write)
+            self.strategy.write_settings(settings_to_write, self.file_name, self.section)
         if missing:
             for name, local_setting in missing.items():
                 printer.print_error('Local setting `{name}` must be set'.format(name=name))
@@ -118,7 +115,7 @@ class Checker(Base):
             printer.print_header(
                 'Enter a value for the local setting `{name}` (as JSON)'.format(name=name))
             if local_setting.doc:
-                printer.print_header('Doc:', local_setting.doc)
+                printer.print_header(local_setting.doc)
             if local_setting.has_default:
                 msg = 'Hit enter to use default: `{0!r}`'.format(local_setting.default)
                 if local_setting.derived_default:
@@ -128,7 +125,7 @@ class Checker(Base):
             v = input('> ').strip()
             if v:
                 try:
-                    v = self._parse_setting(v)
+                    v = self.strategy.decode_value(v)
                 except ValueError as e:
                     printer.print_error(e)
                 else:
@@ -141,25 +138,3 @@ class Checker(Base):
             else:
                 printer.print_error('You must enter a value for `{0}`'.format(name))
         return v, is_set
-
-    def write_settings(self, settings):
-        parser = self._make_parser()
-        if os.path.exists(self.file_name):
-            with open(self.file_name) as fp:
-                parser.read_file(fp)
-        else:
-            printer.print_info('Creating new local settings file: `{0.file_name}`'.format(self))
-        if self.section not in parser:
-            printer.print_info('Adding new section: `{0.section}`'.format(self))
-            parser.add_section(self.section)
-        sorted_keys = sorted(settings.keys())
-        for name in sorted_keys:
-            value = json.dumps(settings[name])
-            settings[name] = value
-            parser[self.section][name] = value
-        with open(self.file_name, 'w') as fp:
-            parser.write(fp)
-        for name in sorted_keys:
-            value = settings[name]
-            printer.print_success(
-                'Saved `{name}` to local config file as `{value}`'.format(**locals()))

@@ -7,14 +7,16 @@ from .color_printer import ColorPrinter
 from .checker import Checker
 from .exc import LocalSettingsError, SettingsFileNotFoundError
 from .loader import Loader
+from .settings import Settings
+from .strategy import INIJSONStrategy
 from .types import LocalSetting, SecretSetting
 from .util import NO_DEFAULT  # noqa: exported
 from .util import get_file_name
 from .__main__ import make_local_settings
 
 
-def load_and_check_settings(base_settings,  file_name=None, section=None, base_path=None,
-                            prompt=None, quiet=None) -> dict:
+def load_and_check_settings(base_settings, file_name=None, section=None, base_path=None,
+                            strategy_type=INIJSONStrategy, prompt=None, quiet=None) -> Settings:
     """Merge local settings from file with base settings, then check.
 
     Returns a new dict containing the base settings and the loaded
