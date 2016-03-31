@@ -4,15 +4,18 @@ import pkg_resources
 import sys
 
 from .color_printer import ColorPrinter
-from .checker import Checker
-from .exc import SettingsFileDidNotPassCheck, SettingsFileNotFoundError
+from .exc import SettingsFileDidNotPassCheck
 from .loader import Loader
 from .settings import Settings
 from .strategy import INIJSONStrategy
-from .types import LocalSetting, SecretSetting
-from .util import NO_DEFAULT  # noqa: exported
 from .util import get_file_name
-from .__main__ import make_local_settings
+
+# Exported (but unused locally)
+from .checker import Checker  # noqa: exported
+from .exc import SettingsFileNotFoundError  # noqa: exported
+from .types import LocalSetting, SecretSetting  # noqa: exported
+from .util import NO_DEFAULT  # noqa: exported
+from .__main__ import make_local_settings  # noqa: exported
 
 
 def load_and_check_settings(base_settings, file_name=None, section=None, base_path=None,
