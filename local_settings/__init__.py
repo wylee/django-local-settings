@@ -74,16 +74,8 @@ def load_and_check_settings(base_settings, file_name=None, section=None, base_pa
         base_path = base_path or os.getcwd()
         file_name = os.path.normpath(os.path.join(base_path, file_name))
     try:
-        try:
-            loader = Loader(file_name, section)
-        except SettingsFileNotFoundError:
-            settings = base_settings
-            registry = None
-        else:
-            settings = loader.load(base_settings)
-            registry = loader.registry
-        checker = Checker(file_name, section, registry=registry, prompt=prompt)
-        success = checker.check(settings)
+        loader = Loader(file_name, section, strategy_type=strategy_type, check_exists=False)
+        settings, success = loader.load_and_check(base_settings, prompt)
     except KeyboardInterrupt:
         # Loading/checking of local settings was aborted with Ctrl-C.
         # This isn't an error, but we don't want to continue.

@@ -5,6 +5,7 @@ from django.utils.module_loading import import_string
 from six import string_types
 
 from .base import Base
+from .checker import Checker
 from .settings import Settings
 from .types import LocalSetting
 
@@ -16,6 +17,23 @@ class Loader(Base):
     def __init__(self, file_name, section=None, registry=None, strategy_type=INIJSONStrategy,
                  check_exists=True):
         super(Loader, self).__init__(file_name, section, registry, strategy_type, check_exists)
+
+    def load_and_check(self, base_settings, check_exists=False, prompt=None):
+        """Load settings and check them.
+
+        Loads the settings from ``base_settings``, then checks them.
+
+        Returns:
+            (merged settings, True) on success
+            (None, False) on failure
+
+        """
+        checker = Checker(
+            self.file_name, self.section, self.registry, self.strategy_type, check_exists, prompt)
+        settings = self.load(base_settings)
+        if checker.check(settings):
+            return settings, True
+        return None, False
 
     def load(self, base_settings):
         """Merge local settings from file with ``base_settings``.
