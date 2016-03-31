@@ -1,4 +1,3 @@
-import os
 from collections import Mapping, MutableSequence, Sequence
 
 from django.utils.module_loading import import_string
@@ -6,7 +5,6 @@ from django.utils.module_loading import import_string
 from six import string_types
 
 from .base import Base
-from .exc import SettingsFileNotFoundError
 from .settings import Settings
 from .types import LocalSetting
 
@@ -15,10 +13,9 @@ from .strategy import INIJSONStrategy
 
 class Loader(Base):
 
-    def __init__(self, file_name, section=None, registry=None, strategy_type=INIJSONStrategy):
-        super(Loader, self).__init__(file_name, section, registry, strategy_type)
-        if not os.path.exists(self.file_name):
-            raise SettingsFileNotFoundError(self.file_name)
+    def __init__(self, file_name, section=None, registry=None, strategy_type=INIJSONStrategy,
+                 check_exists=True):
+        super(Loader, self).__init__(file_name, section, registry, strategy_type, check_exists)
 
     def load(self, base_settings):
         """Merge local settings from file with ``base_settings``.
