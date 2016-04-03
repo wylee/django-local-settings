@@ -19,7 +19,8 @@ from .__main__ import make_local_settings  # noqa: exported
 
 
 def load_and_check_settings(base_settings, file_name=None, section=None, base_path=None,
-                            strategy_type=INIJSONStrategy, prompt=None, quiet=None) -> Settings:
+                            strategy_type=INIJSONStrategy, disable=None, prompt=None,
+                            quiet=None) -> Settings:
     """Merge local settings from file with base settings, then check.
 
     Returns a new dict containing the base settings and the loaded
@@ -63,8 +64,11 @@ def load_and_check_settings(base_settings, file_name=None, section=None, base_pa
 
     """
     environ_config = get_config_from_environ()
+    disable = environ_config['disable'] if disable is None else disable
     prompt = environ_config['prompt'] if prompt is None else prompt
     quiet = environ_config['quiet'] if quiet is None else quiet
+    if disable:
+        return {}
     if file_name is None:
         file_name = get_file_name()
     if ':' in file_name:
@@ -99,6 +103,7 @@ def get_config_from_environ():
         name = 'LOCAL_SETTINGS_CONFIG_{name}'.format(name=name)
         return json.loads(os.environ.get(name, default))
     options = (
+        ('disable', 'false'),
         ('prompt', 'null'),
         ('quiet', 'false'),
     )
