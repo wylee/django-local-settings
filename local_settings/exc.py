@@ -8,6 +8,11 @@ class SettingsFileNotFoundError(LocalSettingsError):
     pass
 
 
+class SettingsFileSectionNotFoundError(LocalSettingsError, LookupError):
+
+    pass
+
+
 class SettingsFileDidNotPassCheck(LocalSettingsError):
 
     pass

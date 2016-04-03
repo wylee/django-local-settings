@@ -8,6 +8,8 @@ from configparser import RawConfigParser
 
 from six import with_metaclass
 
+from .exc import SettingsFileNotFoundError, SettingsFileSectionNotFoundError
+
 
 __all__ = [
     'Strategy',
@@ -99,9 +101,13 @@ class INIStrategy(Strategy):
     def read_file(self, file_name, section=None):
         """Read settings from specified ``section`` of config file."""
         file_name, section = self.parse_file_name_and_section(file_name, section)
+        if not os.path.isfile(file_name):
+            raise SettingsFileNotFoundError(file_name)
         parser = self.make_parser()
         with open(file_name) as fp:
             parser.read_file(fp)
+        if section not in parser:
+            raise SettingsFileSectionNotFoundError(section)
         extends = parser[section].get('extends')
         settings = {}
         if extends:
