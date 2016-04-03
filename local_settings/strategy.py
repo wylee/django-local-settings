@@ -146,6 +146,8 @@ class INIStrategy(Strategy):
 
     def get_default_section(self, file_name):
         """Returns first non-DEFAULT section; falls back to DEFAULT."""
+        if not os.path.isfile(file_name):
+            return 'DEFAULT'
         parser = self.make_parser()
         with open(file_name) as fp:
             parser.read_file(fp)
