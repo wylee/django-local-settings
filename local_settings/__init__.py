@@ -62,10 +62,9 @@ def load_and_check_settings(base_settings, file_name=None, section=None, base_pa
     See :meth:`.Loader.load` and :meth:`.Checker.check` for more info.
 
     """
-    if prompt is None:
-        prompt = json.loads(os.environ.get('LOCAL_SETTINGS_CONFIG_PROMPT', 'null'))
-    if quiet is None:
-        quiet = json.loads(os.environ.get('LOCAL_SETTINGS_CONFIG_QUIET', 'false'))
+    environ_config = get_config_from_environ()
+    prompt = environ_config['prompt'] if prompt is None else prompt
+    quiet = environ_config['quiet'] if quiet is None else quiet
     if file_name is None:
         file_name = get_file_name()
     if ':' in file_name:
@@ -92,3 +91,15 @@ def load_and_check_settings(base_settings, file_name=None, section=None, base_pa
     if not quiet:
         printer.print_success('Settings loaded successfully from {0}'.format(file_name))
     return settings
+
+
+def get_config_from_environ():
+    def get(name, default='null'):
+        name = name.upper()
+        name = 'LOCAL_SETTINGS_CONFIG_{name}'.format(name=name)
+        return json.loads(os.environ.get(name, default))
+    options = (
+        ('prompt', 'null'),
+        ('quiet', 'false'),
+    )
+    return {n: get(n, default) for (n, default) in options}
