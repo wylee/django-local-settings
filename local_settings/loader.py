@@ -54,8 +54,6 @@ class Loader(Base):
             for prefix in ('EXTRA.', 'SWAP.'):
                 if name.startswith(prefix):
                     name = name[len(prefix):]
-                    if name.startswith('(') and name.endswith(')'):
-                        name = name[1:-1]
                     name = '{prefix}({name})'.format_map(locals())
 
             # If there's already a LocalSetting in this slot, set the
