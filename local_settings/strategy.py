@@ -23,6 +23,8 @@ log = logging.getLogger(__name__)
 
 class Strategy(with_metaclass(ABCMeta)):
 
+    file_types = ()
+
     @abstractmethod
     def read_file(self, file_name, section=None):
         """Read settings from file."""
@@ -98,6 +100,8 @@ class LocalSettingsConfigParser(RawConfigParser):
 
 class INIStrategy(Strategy):
 
+    file_types = ('ini',)
+
     def read_file(self, file_name, section=None):
         """Read settings from specified ``section`` of config file."""
         file_name, section = self.parse_file_name_and_section(file_name, section)
@@ -155,6 +159,8 @@ class INIStrategy(Strategy):
 
 class INIJSONStrategy(INIStrategy):
 
+    file_types = ('cfg',)
+
     def decode_value(self, value):
         value = value.strip()
         if not value:
@@ -167,3 +173,48 @@ class INIJSONStrategy(INIStrategy):
 
     def encode_value(self, value):
         return json.dumps(value)
+
+
+def get_strategy_types():
+    """Get a list of all :class:`Strategy` subclasses."""
+    def get_subtypes(type_):
+        subtypes = type_.__subclasses__()
+        for subtype in subtypes:
+            subtypes.extend(get_subtypes(subtype))
+        return subtypes
+    return get_subtypes(Strategy)
+
+
+def get_file_type_map():
+    """Map file types (extensions) to strategy types."""
+    file_type_map = {}
+    for strategy_type in get_strategy_types():
+        for ext in strategy_type.file_types:
+            if ext in file_type_map:
+                raise KeyError(
+                    'File type {ext} already registered to {file_type_map[ext]}'
+                    .format_map(locals()))
+            file_type_map[ext] = strategy_type
+    return file_type_map
+
+
+def guess_strategy_type(file_name_or_ext):
+    """Guess strategy type to use for file by extension.
+
+    Args:
+        file_name_or_ext: Either a file name with an extension or just
+            an extension
+
+    Returns:
+        Strategy: Type corresponding to extension or None if there's no
+            corresponding strategy type
+
+    """
+    if '.' not in file_name_or_ext:
+        ext = file_name_or_ext
+    else:
+        name, ext = os.path.splitext(file_name_or_ext)
+    ext = ext.lstrip('.')
+    file_type_map = get_file_type_map()
+    return file_type_map.get(ext, None)
+
