@@ -1,6 +1,5 @@
 import re
 from collections import Mapping, Sequence
-from itertools import takewhile
 
 from .util import NO_DEFAULT, NO_DEFAULT as PLACEHOLDER
 
