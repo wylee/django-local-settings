@@ -83,6 +83,10 @@ def load_and_check_settings(base_settings, file_name=None, section=None, base_pa
         if not quiet:
             printer.print_warning('\nAborted loading/checking of local settings')
         sys.exit(0)
+    if loader.section:
+        file_name = '{loader.file_name}#{loader.section}'.format(loader=loader)
+    else:
+        file_name = loader.file_name
     if not success:
         raise SettingsFileDidNotPassCheck(file_name)
     if not quiet:
