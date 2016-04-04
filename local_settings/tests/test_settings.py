@@ -63,11 +63,15 @@ class TestSetItem(unittest.TestCase):
         self.assertIn('a', self.settings)
         self.assertEqual(self.settings['a'], 1)
 
-    def test_setitem_via_dotted_name(self):
-        self.settings['a.b'] = 1
+    def test_setitem_with_leading_underscore_fails(self):
+        self.assertRaises(KeyError, self.settings.__setitem__, '_a', 1)
+
+    def test_set_dotted(self):
+        self.settings.set_dotted('a.b', 1)
         self.assertIn('a', self.settings)
         self.assertIn('b', self.settings['a'])
         self.assertEqual(self.settings['a']['b'], 1)
+        self.assertEqual(self.settings.a.b, 1)
 
     def test_setattr(self):
         self.settings.a = Settings()
@@ -76,24 +80,25 @@ class TestSetItem(unittest.TestCase):
         self.assertIn('b', self.settings['a'])
         self.assertEqual(self.settings['a']['b'], 1)
 
-    def test_setattr_via_dotted_name(self):
-        setattr(self.settings, 'a.b', 1)
-        self.assertIn('a', self.settings)
-        self.assertIn('b', self.settings['a'])
-        self.assertEqual(self.settings['a']['b'], 1)
+    def test_setdefault(self):
+        x = self.settings.setdefault('x', 1)
+        self.assertIn('x', self.settings)
+        self.assertEqual(x, 1)
+
+    def test_setdefault_with_leading_underscore_fails(self):
+        self.assertRaises(KeyError, self.settings.setdefault, '_x', 1)
 
 
 class TestGetItem(unittest.TestCase):
 
     def setUp(self):
-        self.settings = Settings()
-        self.settings['a.b.c'] = 'c'
+        self.settings = Settings({'a': {'b': {'c': 'c'}}})
 
     def test_getitem(self):
         self.assertEqual(self.settings['a']['b']['c'], 'c')
 
     def test_getitem_via_dotted_name(self):
-        self.assertEqual(self.settings['a.b.c'], 'c')
+        self.assertEqual(self.settings.get_dotted('a.b.c'), 'c')
 
     def test_getattr(self):
         self.assertEqual(self.settings.a.b.c, 'c')
@@ -105,43 +110,59 @@ class TestGetItem(unittest.TestCase):
         self.assertRaises(KeyError, self.settings.__getitem__, ('x.y.z',))
 
 
-class TestNested(unittest.TestCase):
+class TestDotted(unittest.TestCase):
 
     def setUp(self):
         self.settings = Settings()
 
+    def test_dotted(self):
+        self.settings.set_dotted('x.y.z', 'z')
+        self.assertTrue(self.settings.contains_dotted('x.y.z'))
+        self.assertEqual(self.settings.get_dotted('x.y.z'), 'z')
+        self.assertIn('x', self.settings)
+        self.assertIn('y', self.settings['x'])
+        self.assertIn('z', self.settings['x']['y'])
+        self.assertEqual(self.settings['x']['y']['z'], 'z')
+        self.assertEqual(self.settings.x.y.z, 'z')
+
     def test_nested_parentheses(self):
-        self.settings['(x(y))'] = 'x'
-        keys = list(self.settings.keys())
-        self.assertIn('x(y)', keys)
-        self.assertEqual(self.settings['(x(y))'], 'x')
+        self.settings.set_dotted('(x(y))', 'x')
+        self.assertTrue(self.settings.contains_dotted('(x(y))'))
+        self.assertEqual(self.settings.get_dotted('(x(y))'), 'x')
+        self.assertIn('x(y)', self.settings)
+        self.assertEqual(self.settings['x(y)'], 'x')
 
     def test_nested_parentheses_with_dots(self):
-        self.settings['(x.(y.z))'] = 'x'
-        keys = list(self.settings.keys())
-        self.assertIn('(x.(y.z))', keys)
-        self.assertEqual(self.settings['(x.(y.z))'], 'x')
+        self.settings.set_dotted('(x.(y.z))', 'x')
+        self.assertTrue(self.settings.contains_dotted('(x.(y.z))'))
+        self.assertEqual(self.settings.get_dotted('(x.(y.z))'), 'x')
+        self.assertIn('x.(y.z)', self.settings)
+        self.assertEqual(self.settings['x.(y.z)'], 'x')
 
     def test_nested_empty_parentheses(self):
-        self.settings['(())'] = 'x'
-        keys = list(self.settings.keys())
-        self.assertIn('()', keys)
-        self.assertEqual(self.settings['(())'], 'x')
+        self.settings.set_dotted('(())', 'x')
+        self.assertTrue(self.settings.contains_dotted('(())'))
+        self.assertEqual(self.settings.get_dotted('(())'), 'x')
+        self.assertIn('()', self.settings)
+        self.assertEqual(self.settings['()'], 'x')
 
-    def test_nested_brackets_with_dots(self):
+    def test_nested_brackets(self):
         self.settings['{x{y}}'] = 'x'
-        keys = list(self.settings.keys())
-        self.assertIn('{x{y}}', keys)
+        self.assertTrue(self.settings.contains_dotted('{x{y}}'))
+        self.assertEqual(self.settings.get_dotted('{x{y}}'), 'x')
+        self.assertIn('{x{y}}', self.settings)
         self.assertEqual(self.settings['{x{y}}'], 'x')
 
     def test_nested_brackets_with_dots(self):
         self.settings['{x.{y.z}}'] = 'x'
-        keys = list(self.settings.keys())
-        self.assertIn('{x.{y.z}}', keys)
+        self.assertTrue(self.settings.contains_dotted('{x.{y.z}}'))
+        self.assertEqual(self.settings.get_dotted('{x.{y.z}}'), 'x')
+        self.assertIn('{x.{y.z}}', self.settings)
         self.assertEqual(self.settings['{x.{y.z}}'], 'x')
 
     def test_nested_empty_brackets(self):
         self.settings['{{}}'] = 'x'
-        keys = list(self.settings.keys())
-        self.assertIn('{{}}', keys)
+        self.assertTrue(self.settings.contains_dotted('{{}}'))
+        self.assertEqual(self.settings.get_dotted('{{}}'), 'x')
+        self.assertIn('{{}}', self.settings)
         self.assertEqual(self.settings['{{}}'], 'x')

@@ -18,8 +18,8 @@ class Settings(dict):
         >>> settings.name = 'name'
         >>> settings.name
         'name'
-        >>> settings['NAMESPACE.name'] = 'nested name'
-        >>> settings['NAMESPACE.name']
+        >>> settings.set_dotted('NAMESPACE.name', 'nested name')
+        >>> settings.get_dotted('NAMESPACE.name')
         'nested name'
 
     These are all equivalent::
@@ -28,26 +28,16 @@ class Settings(dict):
         'nested name'
         >>> settings.NAMESPACE.name
         'nested name'
-        >>> settings['NAMESPACE.name']
+        >>> settings.get_dotted('NAMESPACE.name')
         'nested name'
 
     Adding an item with a dotted name will create nested settings like
     so::
 
         >>> settings = Settings()
-        >>> settings['NAMESPACE.name'] = 'nested name'
+        >>> settings.set_dotted('NAMESPACE.name', 'nested name')
         >>> settings
         {'NAMESPACE': {'name': 'nested name'}}
-
-    To add an item with a dotted name without nesting, a special syntax
-    can be used::
-
-        >>> settings = Settings()
-        >>> settings['(not.nested)'] = 'not nested'
-        >>> settings
-        {'not.nested': 'not nested'}
-        >>> settings['(not.nested)']
-        'not nested'
 
     Implementation Notes
     ====================
@@ -69,6 +59,89 @@ class Settings(dict):
     clashes between settings and non-setting attributes to a minimum.
 
     """
+
+    def __init__(self, *args, **kwargs):
+        self.update(*args, **kwargs)
+        super(Settings, self).__init__(*args, **kwargs)
+        for k, v in self.items():
+            if isinstance(v, Mapping):
+                super(Settings, self).__setitem__(k, Settings(v))
+
+    # Implementation of attribute access.
+
+    def __setitem__(self, name, value):
+        if name.startswith('_'):
+            raise KeyError('Settings keys may not start with an underscore')
+        if isinstance(value, Mapping):
+            value = Settings(value)
+        super(Settings, self).__setitem__(name, value)
+
+    def __getattribute__(self, name):
+        try:
+            return super(Settings, self).__getattribute__(name)
+        except AttributeError:
+            try:
+                return self[name]
+            except KeyError:
+                raise AttributeError(name)
+
+    def __setattr__(self, name, value):
+        if name.startswith('_'):
+            super(Settings, self).__setattr__(name, value)
+        else:
+            self[name] = value
+
+    # The following are required because these methods on the built-in
+    # dict type will *not* call our __setitem__ method above. These
+    # implementations were copied from collections.MutableMapping in the
+    # standard library and tweaked slightly.
+
+    def setdefault(self, name, default=None):
+        try:
+            return self[name]
+        except KeyError:
+            self[name] = default
+        return self[name]
+
+    def update(*args, **kwargs):
+        if len(args) > 2:
+            raise TypeError(
+                'update() takes at most 2 positional arguments ({} given)'.format(len(args)))
+        elif not args:
+            raise TypeError('update() takes at least 1 argument (0 given)')
+        self = args[0]
+        other = args[1] if len(args) >= 2 else ()
+        if isinstance(other, Mapping):
+            for name in other:
+                self[name] = other[name]
+        elif hasattr(other, 'keys'):
+            for name in other.keys():
+                self[name] = other[name]
+        else:
+            for name, value in other:
+                self[name] = value
+        for name, value in kwargs.items():
+            self[name] = value
+
+    # Implementation of dotted item access.
+
+    def contains_dotted(self, name):
+        try:
+            self._traverse(name)
+        except KeyError:
+            return False
+        return True
+
+    def get_dotted(self, name, default=NO_DEFAULT):
+        try:
+            return self._traverse(name)
+        except KeyError:
+            if default is NO_DEFAULT:
+                raise
+            return default
+
+    def set_dotted(self, name, value, create_missing=True):
+        self._traverse(name, create_missing=create_missing, value=value)
 
     def _traverse(self, name, create_missing=False, action=None, value=NO_DEFAULT):
         """Traverse to the item specified by ``name``.
@@ -92,10 +165,7 @@ class Settings(dict):
                 self._create_segment(obj, segment, next_segment)
 
             try:
-                if isinstance(obj, Settings):
-                    next_obj = super(Settings, obj).__getitem__(segment)
-                else:
-                    next_obj = obj[segment]
+                next_obj = obj[segment]
             except IndexError:
                 raise KeyError(segment)
 
@@ -105,16 +175,9 @@ class Settings(dict):
                 if action:
                     value = action(obj, segment)
                 elif value is not NO_DEFAULT:
-                    if isinstance(obj, Settings):
-                        # Avoid recursive traversal
-                        super(Settings, obj).__setitem__(segment, value)
-                    else:
-                        obj[segment] = value
+                    obj[segment] = value
                 else:
-                    if isinstance(obj, Settings):
-                        value = super(Settings, obj).__getitem__(segment)
-                    else:
-                        value = obj[segment]
+                    value = obj[segment]
 
         return value
 
@@ -133,10 +196,7 @@ class Settings(dict):
             value = [PLACEHOLDER] * (next_segment + 1)
         else:
             value = Settings()
-        if isinstance(obj, Settings):
-            if segment not in obj:
-                super(Settings, obj).__setitem__(segment, value)
-        elif isinstance(obj, Mapping):
+        if isinstance(obj, Mapping):
             if segment not in obj:
                 obj[segment] = value
         elif isinstance(obj, Sequence):
@@ -237,151 +297,3 @@ class Settings(dict):
             return int(name)
         return name
 
-    def __contains__(self, name):
-        try:
-            self._traverse(name)
-        except KeyError:
-            return False
-        return True
-
-    def __delitem__(self, name):
-        action = lambda obj, segment: super(Settings, self).__delitem__(segment)
-        self._traverse(name, action=action)
-
-    def __getitem__(self, name):
-        return self._traverse(name)
-
-    def __setitem__(self, name, value):
-        if name.startswith('_'):
-            raise KeyError('Settings keys may not start with an underscore')
-        self._traverse(name, create_missing=True, value=value)
-
-    def __getattribute__(self, name):
-        try:
-            return dict.__getattribute__(self, name)
-        except AttributeError:
-            try:
-                return self[name]
-            except KeyError:
-                raise AttributeError(name)
-
-    def __setattr__(self, name, value):
-        if name.startswith('_'):
-            dict.__setattr__(self, name, value)
-        else:
-            self[name] = value
-
-    def __iter__(self):
-        iterator = super(Settings, self).__iter__()
-        for k in iterator:
-            if '.' in k:
-                is_bracketed_group = k[0] == '{' and k[-1] == '}'
-                if not is_bracketed_group:
-                    k = '(%s)' % k if '.' in k else k
-            yield k
-
-    # The following are required because these methods on the built-in
-    # dict type will *not* call our __getitem__, __setitem__, __iter__,
-    # etc methods above. These implementations and the views below were
-    # copied from abc.MutableMapping in the standard library and tweaked
-    # slightly.
-
-    def get(self, name, default=None):
-        try:
-            return self[name]
-        except KeyError:
-            return default
-
-    def keys(self):
-        return KeysView(self)
-
-    def items(self):
-        return ItemsView(self)
-
-    def values(self):
-        return ValuesView(self)
-
-    def pop(self, name, default=NO_DEFAULT):
-        try:
-            value = self[name]
-        except KeyError:
-            if default is NO_DEFAULT:
-                raise
-            return default
-        else:
-            del self[name]
-            return value
-
-    def setdefault(self, name, default=None):
-        try:
-            return self[name]
-        except KeyError:
-            self[name] = default
-        return default
-
-    def update(*args, **kwargs):
-        if len(args) > 2:
-            raise TypeError(
-                'update() takes at most 2 positional arguments ({} given)'.format(len(args)))
-        elif not args:
-            raise TypeError('update() takes at least 1 argument (0 given)')
-        self = args[0]
-        other = args[1] if len(args) >= 2 else ()
-        if isinstance(other, Mapping):
-            for name in other:
-                self[name] = other[name]
-        elif hasattr(other, 'keys'):
-            for name in other.keys():
-                self[name] = other[name]
-        else:
-            for name, value in other:
-                self[name] = value
-        for name, value in kwargs.items():
-            self[name] = value
-
-
-class SettingsView:
-
-    def __init__(self, settings):
-        self._settings = settings
-
-    def __len__(self):
-        return len(self._settings)
-
-
-class KeysView(SettingsView):
-
-    def __contains__(self, name):
-        return name in self._settings
-
-    def __iter__(self):
-        for k in self._settings:
-            yield k
-
-
-class ItemsView(SettingsView):
-
-    def __contains__(self, item):
-        name, value = item
-        try:
-            v = self._settings[name]
-        except KeyError:
-            return False
-        return v == value
-
-    def __iter__(self):
-        for k in self._settings:
-            yield (k, self._settings[k])
-
-
-class ValuesView(SettingsView):
-
-    def __contains__(self, value):
-        for k in self._settings:
-            if self._settings[k] == value:
-                return True
-        return False
-
-    def __iter__(self):
-        for key in self._settings:
-            yield self._settings[key]

@@ -79,7 +79,7 @@ class TestLoading(unittest.TestCase):
         self.assertEqual(local_setting.default, 'default value')
         self.assertEqual(local_setting.value, 'local value')
         self.assertEqual(settings.INTERPOLATED.x, 'value')
-        self.assertEqual(settings['INTERPOLATED.x'], 'value')
+        self.assertEqual(settings.get_dotted('INTERPOLATED.x'), 'value')
         self.assertEqual(settings, expected)
 
 

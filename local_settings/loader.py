@@ -59,11 +59,12 @@ class Loader(Base):
             # If there's already a LocalSetting in this slot, set the
             # value of that LocalSetting and put it in the registry so
             # it can be easily retrieved later.
-            current_value = settings.get(name)
+            current_value = settings.get_dotted(name, None)
             if isinstance(current_value, LocalSetting):
                 current_value.value = value
                 self.registry[current_value] = name
-            settings[name] = value
+
+            settings.set_dotted(name, value)
 
         settings.pop('extends', None)
         self._interpolate(settings)
@@ -129,12 +130,10 @@ class Loader(Base):
         for name, extra_val in extras.items():
             if not extra_val:
                 continue
-            if name.startswith('(') and name.endswith(')'):
-                name = name[1:-1]
-            current_val = settings[name]
+            current_val = settings.get_dotted(name)
             if not isinstance(current_val, Sequence):
                 raise TypeError('EXTRA only works with list-type settings')
-            settings[name] = current_val + extra_val
+            settings.set_dotted(name, current_val + extra_val)
 
     def _swap_list_items(self, settings, swap):
         if not swap:
@@ -142,9 +141,7 @@ class Loader(Base):
         for name, swap_map in swap.items():
             if not swap_map:
                 continue
-            if name.startswith('(') and name.endswith(')'):
-                name = name[1:-1]
-            current_val = settings[name]
+            current_val = settings.get_dotted(name)
             if not isinstance(current_val, Sequence):
                 raise TypeError('SWAP only works with list-type settings')
             for old_item, new_item in swap_map.items():
@@ -155,6 +152,6 @@ class Loader(Base):
         if not import_from_string:
             return
         for name in import_from_string:
-            current_val = settings[name]
+            current_val = settings.get_dotted(name)
             if isinstance(current_val, string_types):
-                settings[name] = import_string(current_val)
+                settings.set_dotted(name, import_string(current_val))
