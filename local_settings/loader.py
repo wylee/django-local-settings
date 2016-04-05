@@ -83,13 +83,20 @@ class Loader(Base):
             self._interpolate_values(settings, settings, interpolated)
         self._interpolate_keys(settings, settings)
 
+    def _inject(self, settings, value):
+        assert isinstance(value, str), 'Expected str; got {0.__class__}'.format(value)
+        if '{' not in value:
+            return value, False
+        try:
+            new_value = value.format(**settings)
+        except KeyError:
+            new_value = value
+        return new_value, (new_value != value)
+
     def _interpolate_values(self, obj, settings, interpolated):
         if isinstance(obj, string_types):
-            try:
-                new_value = obj.format(**settings)
-            except KeyError:
-                new_value = obj
-            if new_value != obj:
+            new_value, changed = self._inject(settings, obj)
+            if changed:
                 obj = new_value
                 interpolated.append((obj, new_value))
         elif isinstance(obj, Mapping):
@@ -108,8 +115,8 @@ class Loader(Base):
             replacements = {}
             for k, v in obj.items():
                 if isinstance(k, str):
-                    new_k = k.format(**settings)
-                    if k != new_k:
+                    new_k, changed = self._inject(settings, k)
+                    if changed:
                         replacements[k] = new_k
                 self._interpolate_keys(v, settings)
             for k, new_k in replacements.items():
