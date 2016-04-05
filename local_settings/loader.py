@@ -94,20 +94,20 @@ class Loader(Base):
         return new_value, (new_value != value)
 
     def _interpolate_values(self, obj, settings, interpolated):
-        if isinstance(obj, string_types):
-            new_value, changed = self._inject(settings, obj)
-            if changed:
-                obj = new_value
-                interpolated.append((obj, new_value))
-        elif isinstance(obj, Mapping):
+        if isinstance(obj, Mapping):
             for k, v in obj.items():
                 obj[k] = self._interpolate_values(v, settings, interpolated)
         elif isinstance(obj, MutableSequence):
             for i, item in enumerate(obj):
                 obj[i] = self._interpolate_values(item, settings, interpolated)
-        elif isinstance(obj, Sequence):
+        elif isinstance(obj, Sequence) and not isinstance(obj, string_types):
             obj = obj.__class__(
                 self._interpolate_values(item, settings, interpolated) for item in obj)
+        elif isinstance(obj, string_types):
+            new_value, changed = self._inject(settings, obj)
+            if changed:
+                obj = new_value
+                interpolated.append((obj, new_value))
         return obj
 
     def _interpolate_keys(self, obj, settings):
