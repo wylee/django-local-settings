@@ -72,9 +72,6 @@ class Loader(Base):
         self._swap_list_items(settings, settings.pop('SWAP', None))
         self._import_from_string(settings, settings.pop('IMPORT_FROM_STRING', None))
 
-        if 'LOGGING' in settings:
-            settings['LOGGING'] = dict(settings['LOGGING'])
-
         return settings
 
     # Post-processing
