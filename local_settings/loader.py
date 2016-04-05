@@ -97,8 +97,6 @@ class Loader(Base):
                 interpolated.append((obj, new_value))
         elif isinstance(obj, Mapping):
             for k, v in obj.items():
-                # if '.' in k:
-                #     k = '(%s)' % k
                 obj[k] = self._interpolate_values(v, settings, interpolated)
         elif isinstance(obj, MutableSequence):
             for i, item in enumerate(obj):
