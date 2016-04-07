@@ -278,7 +278,7 @@ class Settings(dict):
             if not current_segment_contains_group:
                 segment = convert_name(segment)
             segments.append(segment)
-            current_segment.clear()
+            del current_segment[:]
 
         for c, d in path_iter:
             if c == '.':

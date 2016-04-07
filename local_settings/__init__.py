@@ -20,7 +20,7 @@ from .__main__ import make_local_settings  # noqa: exported
 
 def load_and_check_settings(base_settings, file_name=None, section=None, base_path=None,
                             strategy_type=INIJSONStrategy, disable=None, prompt=None,
-                            quiet=None) -> Settings:
+                            quiet=None):
     """Merge local settings from file with base settings, then check.
 
     Returns a new dict containing the base settings and the loaded

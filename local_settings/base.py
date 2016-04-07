@@ -1,4 +1,4 @@
-class Base:
+class Base(object):
 
     def __init__(self, file_name, section=None, registry=None, strategy_type=None):
         strategy = strategy_type()

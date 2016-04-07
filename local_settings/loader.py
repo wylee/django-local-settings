@@ -54,7 +54,7 @@ class Loader(Base):
             for prefix in ('EXTRA.', 'SWAP.'):
                 if name.startswith(prefix):
                     name = name[len(prefix):]
-                    name = '{prefix}({name})'.format_map(locals())
+                    name = '{prefix}({name})'.format(**locals())
 
             # If there's already a LocalSetting in this slot, set the
             # value of that LocalSetting and put it in the registry so
@@ -83,7 +83,7 @@ class Loader(Base):
             self._interpolate_values(settings, settings, interpolated)
         self._interpolate_keys(settings, settings)
 
-    def _inject(self, settings, value: str):
+    def _inject(self, settings, value):
         """Inject ``obj`` into ``value``.
 
         Go through value looking for ``{{SETTING_NAME}}`` groups and
@@ -98,7 +98,7 @@ class Loader(Base):
                 different from the original value
 
         """
-        assert isinstance(value, str), 'Expected str; got {0.__class__}'.format(value)
+        assert isinstance(value, string_types), 'Expected str; got {0.__class__}'.format(value)
 
         begin, end = '{{', '}}'
 
@@ -124,7 +124,7 @@ class Loader(Base):
             begin_pos += len_begin
             end_pos = new_value.find(end, begin_pos)
             if end_pos == -1:
-                raise ValueError('Unmatched {begin}...{end} in {value}'.format_map(locals()))
+                raise ValueError('Unmatched {begin}...{end} in {value}'.format(**locals()))
 
             # Get name between {{ and }}, ignoring leading and trailing
             # whitespace.
@@ -132,7 +132,7 @@ class Loader(Base):
             name = name.strip()
 
             if not name:
-                raise ValueError('Empty name in {value}'.format_map(locals()))
+                raise ValueError('Empty name in {value}'.format(**locals()))
 
             # Save everything after }}.
             after_pos = end_pos + len_end
@@ -147,7 +147,7 @@ class Loader(Base):
             try:
                 injection_value = str(settings.get_dotted(name))
             except KeyError:
-                raise ValueError('{name} not found in {obj}'.format_map(locals()))
+                raise ValueError('{name} not found in {obj}'.format(**locals()))
 
             # Combine before, inject value, and after to get the new
             # value.
