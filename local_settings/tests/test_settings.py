@@ -146,22 +146,23 @@ class TestDotted(unittest.TestCase):
         self.assertIn('()', self.settings)
         self.assertEqual(self.settings['()'], 'x')
 
-    def test_nested_brackets(self):
-        self.settings['{x{y}}'] = 'x'
-        self.assertTrue(self.settings.contains_dotted('{x{y}}'))
-        self.assertEqual(self.settings.get_dotted('{x{y}}'), 'x')
-        self.assertIn('{x{y}}', self.settings)
-        self.assertEqual(self.settings['{x{y}}'], 'x')
+    def test_brackets(self):
+        self.settings.set_dotted('{{x}}.y', 'x')
+        self.assertTrue(self.settings.contains_dotted('{{x}}.y'))
+        self.assertEqual(self.settings.get_dotted('{{x}}.y'), 'x')
+        self.assertIn('{{x}}', self.settings)
+        self.assertIn('y', self.settings['{{x}}'])
+        self.assertEqual(self.settings['{{x}}']['y'], 'x')
 
-    def test_nested_brackets_with_dots(self):
-        self.settings['{x.{y.z}}'] = 'x'
-        self.assertTrue(self.settings.contains_dotted('{x.{y.z}}'))
-        self.assertEqual(self.settings.get_dotted('{x.{y.z}}'), 'x')
-        self.assertIn('{x.{y.z}}', self.settings)
-        self.assertEqual(self.settings['{x.{y.z}}'], 'x')
+    def test_brackets_with_internal_dots(self):
+        self.settings.set_dotted('{{x.y.z}}', 'x')
+        self.assertTrue(self.settings.contains_dotted('{{x.y.z}}'))
+        self.assertEqual(self.settings.get_dotted('{{x.y.z}}'), 'x')
+        self.assertIn('{{x.y.z}}', self.settings)
+        self.assertEqual(self.settings['{{x.y.z}}'], 'x')
 
-    def test_nested_empty_brackets(self):
-        self.settings['{{}}'] = 'x'
+    def test_empty_brackets(self):
+        self.settings.set_dotted('{{}}', 'x')
         self.assertTrue(self.settings.contains_dotted('{{}}'))
         self.assertEqual(self.settings.get_dotted('{{}}'), 'x')
         self.assertIn('{{}}', self.settings)

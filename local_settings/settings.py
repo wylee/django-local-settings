@@ -1,5 +1,6 @@
 import re
 from collections import Mapping, Sequence
+from itertools import chain
 
 from .util import NO_DEFAULT, NO_DEFAULT as PLACEHOLDER
 
@@ -226,6 +227,12 @@ class Settings(dict):
             ['WORD', 'x.y']
             >>> settings._parse_path('WORD.(x.y).z')
             ['WORD', 'x.y', 'z']
+            >>> settings._parse_path('WORD.0.z')
+            ['WORD', 0, 'z']
+            >>> settings._parse_path('WORD.(0).z')
+            ['WORD', '0', 'z']
+            >>> settings._parse_path('WORD.(0)X.z')
+            ['WORD', '0X', 'z']
 
         An example of where compound names are actually useful is in
         logger settings::
@@ -233,54 +240,80 @@ class Settings(dict):
             LOGGING.loggers.(package.module).handlers = ["console"]
             LOGGING.loggers.(package.module).level = "DEBUG"
 
-        Any segment that looks like an int will be converted to an int.
-        Segments that start with a leading '0' followed by other digits
-        will not be converted.
+        Paths may also contain interpolation groups. Dotted names in
+        these groups will not be split (so there's no need to group them
+        inside parentheses)::
+
+            >>> settings = Settings()
+            >>> settings._parse_path('WORD.{{x}}')
+            ['WORD', '{{x}}']
+            >>> settings._parse_path('WORD.{{x.y}}')
+            ['WORD', '{{x.y}}']
+            >>> settings._parse_path('WORD.{{x.y.z}}XYZ')
+            ['WORD', '{{x.y.z}}XYZ']
+
+        Interpolation groups *can* be wrapped in parentheses, but doing
+        so is redundant::
+
+            >>> settings._parse_path('WORD.({{x.y.z}}XYZ)')
+            ['WORD', '{{x.y.z}}XYZ']
+
+        Any segment that A) looks like an int and B) does *not* contain
+        a (...) or {{...}} group will be converted to an int. Segments
+        that start with a leading "0" followed by other digits will not
+        be converted.
 
         """
+        if not path:
+            raise ValueError('path cannot be empty')
+
         segments = []
-        ipath = iter(path)
+        path_iter = zip(iter(path), chain(path[1:], (None,)))
         convert_name = self._convert_name
-        group_chars = {
-            '(': ')',
-            '{': '}',
-        }
+        current_segment = []
+        current_segment_contains_group = False
 
-        for char in ipath:
-            is_grouped = char in group_chars
-            
-            if is_grouped:
-                segment, end = [], group_chars[char]
-            else:
-                segment, end = [char], '.'
-
-            nested = 0
-            for c in ipath:
-                if c == end:
-                    if nested:
-                        nested -= 1
-                    else:
-                        break
-                elif is_grouped and c == char:
-                    nested += 1
-                segment.append(c)
-            else:
-                if is_grouped:
-                    raise ValueError('Matching end char not found for %s' % char)
-
-            segment = ''.join(segment)
-
-            if char == '{':
-                segment = '{%s}' % segment
-
-            if not is_grouped:
+        def append_segment():
+            segment = ''.join(current_segment)
+            if not current_segment_contains_group:
                 segment = convert_name(segment)
-
             segments.append(segment)
+            current_segment.clear()
 
-            if is_grouped:
-                # Consume dot after end group char
-                next(ipath, None)
+        for c, d in path_iter:
+            if c == '.':
+                append_segment()
+                current_segment_contains_group = False
+            elif c == '(':
+                nested = 0
+                for c, d in path_iter:
+                    current_segment.append(c)
+                    if c == '(':
+                        nested += 1
+                    elif c == ')':
+                        if nested:
+                            nested -= 1
+                        else:
+                            current_segment.pop()  # Remove the closing paren
+                            current_segment_contains_group = True
+                            break
+                else:
+                    raise ValueError('Unclosed (...) in %s' % path)
+            elif c == '{' and d == '{':
+                current_segment_contains_group = True
+                current_segment.append(c)
+                for c, d in path_iter:
+                    current_segment.append(c)
+                    if c == '}' and d == '}':
+                        current_segment_contains_group = True
+                        break
+                else:
+                    raise ValueError('Unclosed {{...}} in %s' % path)
+            else:
+                current_segment.append(c)
+
+        if current_segment:
+            append_segment()
 
         return segments
 

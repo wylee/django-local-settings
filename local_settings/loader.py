@@ -83,14 +83,80 @@ class Loader(Base):
             self._interpolate_values(settings, settings, interpolated)
         self._interpolate_keys(settings, settings)
 
-    def _inject(self, settings, value):
+    def _inject(self, settings, value: str):
+        """Inject ``obj`` into ``value``.
+
+        Go through value looking for ``{{SETTING_NAME}}`` groups and
+        replace each group with the str value of the named setting.
+
+        Args:
+            settings (object): An object, usually a dict
+            value (str): The value to inject obj into
+
+        Returns:
+            (str, bool): The new value and whether the new value is
+                different from the original value
+
+        """
         assert isinstance(value, str), 'Expected str; got {0.__class__}'.format(value)
-        if '{' not in value:
+
+        begin, end = '{{', '}}'
+
+        if begin not in value:
             return value, False
-        try:
-            new_value = value.format(**settings)
-        except KeyError:
-            new_value = value
+
+        new_value = value
+        begin_pos, end_pos = 0, None
+        len_begin, len_end = len(begin), len(end)
+        len_value = len(new_value)
+
+        while begin_pos < len_value:
+            # Find next {{.
+            begin_pos = new_value.find(begin, begin_pos)
+
+            if begin_pos == -1:
+                break
+
+            # Save everything before {{.
+            before = new_value[:begin_pos]
+
+            # Find }} after {{.
+            begin_pos += len_begin
+            end_pos = new_value.find(end, begin_pos)
+            if end_pos == -1:
+                raise ValueError('Unmatched {begin}...{end} in {value}'.format_map(locals()))
+
+            # Get name between {{ and }}, ignoring leading and trailing
+            # whitespace.
+            name = new_value[begin_pos:end_pos]
+            name = name.strip()
+
+            if not name:
+                raise ValueError('Empty name in {value}'.format_map(locals()))
+
+            # Save everything after }}.
+            after_pos = end_pos + len_end
+            try:
+                after = new_value[after_pos:]
+            except IndexError:
+                # Reached end of value.
+                after = ''
+
+            # Retrieve string value for named setting (the "injection
+            # value").
+            try:
+                injection_value = str(settings.get_dotted(name))
+            except KeyError:
+                raise ValueError('{name} not found in {obj}'.format_map(locals()))
+
+            # Combine before, inject value, and after to get the new
+            # value.
+            new_value = ''.join((before, injection_value, after))
+
+            # Continue after injected value.
+            begin_pos = len(before) + len(injection_value)
+            len_value = len(new_value)
+
         return new_value, (new_value != value)
 
     def _interpolate_values(self, obj, settings, interpolated):

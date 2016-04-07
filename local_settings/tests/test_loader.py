@@ -38,7 +38,7 @@ class TestLoading(unittest.TestCase):
 
             'X': {
                 'y': {
-                    'z': '1',
+                    'z': 'z',
                 },
             },
 
@@ -64,6 +64,14 @@ class TestLoading(unittest.TestCase):
                 'value': 'interpolated key',
             },
             'Z': [{'value': 1}],
+            'J': {
+                'local_settings': {
+                    'K': 1,
+                },
+                'local_settingsXXX': {
+                    'L': 2,
+                },
+            },
 
             'STUFF': ['thing', 'another thing'],
 
@@ -75,6 +83,8 @@ class TestLoading(unittest.TestCase):
             'OS': {
                 'PATH': os.path,
             },
+
+            'FORMAT_STRING': '1{format}'
         }
         self.assertEqual(local_setting.default, 'default value')
         self.assertEqual(local_setting.value, 'local value')
