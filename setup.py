@@ -14,11 +14,10 @@ with open('README.md') as readme_fp:
 install_requires = [
     'six',
 ]
+if sys.version_info[:2] < (3, 0):
+    install_requires.append('configparser')
 if sys.version_info[:2] < (2, 7):
-    install_requires += [
-        'argparse',
-        'configparser',
-    ]
+    install_requires.append('argparse')
 
 
 setup(
