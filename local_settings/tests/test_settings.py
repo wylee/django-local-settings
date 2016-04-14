@@ -63,9 +63,6 @@ class TestSetItem(unittest.TestCase):
         self.assertIn('a', self.settings)
         self.assertEqual(self.settings['a'], 1)
 
-    def test_setitem_with_leading_underscore_fails(self):
-        self.assertRaises(KeyError, self.settings.__setitem__, '_a', 1)
-
     def test_set_dotted(self):
         self.settings.set_dotted('a.b', 1)
         self.assertIn('a', self.settings)
@@ -84,9 +81,6 @@ class TestSetItem(unittest.TestCase):
         x = self.settings.setdefault('x', 1)
         self.assertIn('x', self.settings)
         self.assertEqual(x, 1)
-
-    def test_setdefault_with_leading_underscore_fails(self):
-        self.assertRaises(KeyError, self.settings.setdefault, '_x', 1)
 
 
 class TestGetItem(unittest.TestCase):

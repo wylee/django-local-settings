@@ -55,10 +55,6 @@ class Settings(dict):
     interface (because this might cause problems with outside consumers
     of the settings that aren't aware of the magic we're doing here).
 
-    Setting names may not start with an underscore. In general, all
-    non-setting attributes should begin with an underscore. This keeps
-    clashes between settings and non-setting attributes to a minimum.
-
     """
 
     def __init__(self, *args, **kwargs):
@@ -71,8 +67,6 @@ class Settings(dict):
     # Implementation of attribute access.
 
     def __setitem__(self, name, value):
-        if name.startswith('_'):
-            raise KeyError('Settings keys may not start with an underscore')
         if isinstance(value, Mapping):
             value = Settings(value)
         super(Settings, self).__setitem__(name, value)
@@ -87,10 +81,7 @@ class Settings(dict):
                 raise AttributeError(name)
 
     def __setattr__(self, name, value):
-        if name.startswith('_'):
-            super(Settings, self).__setattr__(name, value)
-        else:
-            self[name] = value
+        self[name] = value
 
     # The following are required because these methods on the built-in
     # dict type will *not* call our __setitem__ method above. These
