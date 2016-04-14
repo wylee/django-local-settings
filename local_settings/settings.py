@@ -64,12 +64,12 @@ class Settings(dict):
             if isinstance(v, Mapping):
                 super(Settings, self).__setitem__(k, Settings(v))
 
-    # Implementation of attribute access.
-
     def __setitem__(self, name, value):
         if isinstance(value, Mapping):
             value = Settings(value)
         super(Settings, self).__setitem__(name, value)
+
+    # Implementation of attribute access.
 
     def __getattr__(self, name):
         # This is only invoked if the named attribute isn't found as an
