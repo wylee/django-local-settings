@@ -71,14 +71,13 @@ class Settings(dict):
             value = Settings(value)
         super(Settings, self).__setitem__(name, value)
 
-    def __getattribute__(self, name):
-        try:
-            return super(Settings, self).__getattribute__(name)
-        except AttributeError:
-            try:
-                return self[name]
-            except KeyError:
-                raise AttributeError(name)
+    def __getattr__(self, name):
+        # This is only invoked if the named attribute isn't found as an
+        # instance or class attribute of the Settings instance. In other
+        # words, this will only be called for settings stored in the
+        # instance's internal dict storage. For methods such as `get`,
+        # this won't be called.
+        return self[name]
 
     def __setattr__(self, name, value):
         self[name] = value
