@@ -30,8 +30,6 @@ def load_and_check_settings(base_settings, file_name=None, section=None, base_pa
         - settings from extended file(s), if any
         - settings from file
 
-    When a setting is overridden, it gets moved to the end.
-
     Settings loaded from the specified file will override base settings,
     then the settings will be checked to ensure that all required local
     settings have been set.
