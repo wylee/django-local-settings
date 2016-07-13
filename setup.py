@@ -34,6 +34,7 @@ setup(
         'dev': [
             'coverage>=4',
             'django<1.9',
+            'tox>=2.3.1',
         ],
     },
     classifiers=[
