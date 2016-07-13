@@ -44,6 +44,7 @@ Once the local settings are defined, *any missing settings will be prompted for 
 - Settings files can extend from each other
 - Includes a script to easily generate local settings files for different environments
 - Supports Python 2.7 - 3.5 (using [six](http://pythonhosted.org/six/))
+- Supports Django 1.7 - 1.9
 
 ## Basic usage
 
