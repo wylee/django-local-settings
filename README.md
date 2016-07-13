@@ -43,7 +43,7 @@ Once the local settings are defined, *any missing settings will be prompted for 
 - Local settings can be nested in settings lists and dicts
 - Settings files can extend from each other
 - Includes a script to easily generate local settings files for different environments
-- Supports Python 2.7 - 3.4 (using [six](http://pythonhosted.org/six/))
+- Supports Python 2.7 - 3.5 (using [six](http://pythonhosted.org/six/))
 
 ## Basic usage
 
