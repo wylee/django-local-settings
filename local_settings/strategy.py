@@ -170,7 +170,7 @@ class INIJSONStrategy(INIStrategy):
         try:
             value = json.loads(value)
         except ValueError:
-            raise ValueError('Could not parse `{value}` as JSON'.format_map(locals()))
+            raise ValueError('Could not parse `{value}` as JSON'.format(**locals()))
         return value
 
     def encode_value(self, value):
@@ -195,7 +195,7 @@ def get_file_type_map():
             if ext in file_type_map:
                 raise KeyError(
                     'File type {ext} already registered to {file_type_map[ext]}'
-                    .format_map(locals()))
+                    .format(**locals()))
             file_type_map[ext] = strategy_type
     return file_type_map
 

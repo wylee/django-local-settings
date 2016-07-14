@@ -14,7 +14,7 @@ from .strategy import get_file_type_map, guess_strategy_type
 class ArgParser(argparse.ArgumentParser):
 
     def error(self, message):
-        message = '{self.prog} error: {message}\n'.format_map(locals())
+        message = '{self.prog} error: {message}\n'.format(**locals())
         message = printer.string_error(message)
         self.print_usage(sys.stderr)
         self.exit(2, message)
