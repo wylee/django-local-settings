@@ -5,6 +5,7 @@ package = local_settings
 sdist = dist/$(distribution)-$(version).tar.gz
 upload_path = hrimfaxi:/vol/www/cdn/pypi/dist
 venv = .env
+python_version ?= python3
 version = $(shell cat VERSION)
 
 sources = $(shell find . \
@@ -21,7 +22,7 @@ reinit: clean-venv clean-install init
 
 venv: $(venv)
 $(venv):
-	virtualenv -p python3 $(venv)
+	virtualenv -p $(python_version) $(venv)
 clean-venv:
 	rm -rf $(venv)
 
