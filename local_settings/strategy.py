@@ -219,4 +219,3 @@ def guess_strategy_type(file_name_or_ext):
     ext = ext.lstrip('.')
     file_type_map = get_file_type_map()
     return file_type_map.get(ext, None)
-

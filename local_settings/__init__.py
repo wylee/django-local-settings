@@ -6,13 +6,13 @@ import sys
 from .color_printer import color_printer as printer
 from .exc import SettingsFileDidNotPassCheck
 from .loader import Loader
-from .settings import Settings
 from .strategy import INIJSONStrategy
 from .util import get_file_name
 
 # Exported (but unused locally)
 from .checker import Checker  # noqa: exported
 from .exc import SettingsFileNotFoundError  # noqa: exported
+from .settings import Settings  # noqa: exported
 from .types import LocalSetting, SecretSetting  # noqa: exported
 from .util import NO_DEFAULT  # noqa: exported
 from .__main__ import make_local_settings  # noqa: exported

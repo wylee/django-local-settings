@@ -324,4 +324,3 @@ class Settings(dict):
                 return name
             return int(name)
         return name
-

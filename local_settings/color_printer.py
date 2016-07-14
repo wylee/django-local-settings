@@ -14,10 +14,13 @@ class ColorPrinterMeta(type):
             def _print(self, *a, **kw):
                 kw['color'] = _color
                 return self.print(*a, **kw)
+
             def _string(self, *a, **kw):
                 return self.string(_color, *a, **kw)
+
             setattr(cls, 'print_{0}'.format(color), _print)
             setattr(cls, 'string_{0}'.format(color), _string)
+
         for color in cls.colors:
             _make_methods(color)
 
