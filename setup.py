@@ -36,6 +36,7 @@ setup(
             # NOTE: Keep this Django version up to date with latest the
             #       Django release; use tox for more thorough testing.
             'django>=1.9,<1.10',
+            'flake8',
             'tox>=2.3.1',
         ],
     },
