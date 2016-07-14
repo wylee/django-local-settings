@@ -180,7 +180,7 @@ class Loader(Base):
         if isinstance(obj, Mapping):
             replacements = {}
             for k, v in obj.items():
-                if isinstance(k, str):
+                if isinstance(k, string_types):
                     new_k, changed = self._inject(settings, k)
                     if changed:
                         replacements[k] = new_k
