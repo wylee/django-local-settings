@@ -3,6 +3,9 @@ import sys
 from setuptools import find_packages, setup
 
 
+py_version = sys.version_info[:2]
+
+
 with open('VERSION') as version_fp:
     VERSION = version_fp.read().strip()
 
@@ -14,8 +17,18 @@ with open('README.md') as readme_fp:
 install_requires = [
     'six',
 ]
-if sys.version_info[:2] < (3, 0):
+
+if py_version < (3, 0):
     install_requires.append('configparser')
+
+# NOTE: Keep this Django version up to date with the latest Django
+#       release that works for the versions of Python we support.
+#       This is used to get up and running quickly; tox is used to test
+#       all supported Python/Django version combos.
+if py_version == (3, 3):
+    django_spec = 'django>=1.8,<1.9',
+else:
+    django_spec = 'django>=1.9,<1.10',
 
 
 setup(
@@ -31,9 +44,7 @@ setup(
     extras_require={
         'dev': [
             'coverage>=4',
-            # NOTE: Keep this Django version up to date with latest the
-            #       Django release; use tox for more thorough testing.
-            'django>=1.9,<1.10',
+            django_spec,
             'flake8',
             'tox>=2.3.1',
         ],
