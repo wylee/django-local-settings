@@ -16,8 +16,6 @@ install_requires = [
 ]
 if sys.version_info[:2] < (3, 0):
     install_requires.append('configparser')
-if sys.version_info[:2] < (2, 7):
-    install_requires.append('argparse')
 
 
 setup(
