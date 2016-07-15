@@ -4,6 +4,14 @@ from setuptools import find_packages, setup
 
 
 py_version = sys.version_info[:2]
+py_version_dotted = '{0.major}.{0.minor}'.format(sys.version_info)
+supported_py_versions = ('2.7', '3.3', '3.4', '3.5')
+
+
+if py_version_dotted not in supported_py_versions:
+    sys.stderr.write('WARNING: django-local-settings does not officially support Python ')
+    sys.stderr.write(py_version_dotted)
+    sys.stderr.write('\n')
 
 
 with open('VERSION') as version_fp:
