@@ -84,6 +84,14 @@ class Settings(dict):
     def __setattr__(self, name, value):
         self[name] = value
 
+    # Support for copying and pickling.
+
+    def __getstate__(self):
+        return self.__dict__
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+
     # The following are required because these methods on the built-in
     # dict type will *not* call our __setitem__ method above. These
     # implementations were copied from collections.MutableMapping in the
