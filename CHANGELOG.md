@@ -1,8 +1,9 @@
 # Change Log for django-local-settings
 
-## 1.0.0 - unreleased
+## 1.0b2 - 2016-10-21
 
-In progress...
+- Added support for copying and pickling to `Settings` class.
+- Improved setup.py.
 
 ## 1.0b1 - 2016-07-15
 
