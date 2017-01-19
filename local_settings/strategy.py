@@ -106,6 +106,8 @@ class LocalSettingsConfigParser(RawConfigParser):
         return list(options.keys())
 
     def optionxform(self, option):
+        # Don't alter option names; the default implementation lower
+        # cases them.
         return option
 
 
