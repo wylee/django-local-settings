@@ -4,7 +4,8 @@ import json
 import os
 import pkg_resources
 from abc import ABCMeta, abstractmethod
-from configparser import RawConfigParser
+from collections import OrderedDict
+from configparser import NoSectionError, RawConfigParser
 
 from six import with_metaclass
 
@@ -94,6 +95,16 @@ class Strategy(with_metaclass(ABCMeta)):
 
 class LocalSettingsConfigParser(RawConfigParser):
 
+    def options(self, section):
+        # Order [DEFAULT] options before section options; the default
+        # implementation orders them after.
+        options = self._defaults.copy()
+        try:
+            options.update(self._sections[section])
+        except KeyError:
+            raise NoSectionError(section) from None
+        return list(options.keys())
+
     def optionxform(self, option):
         return option
 
@@ -112,8 +123,8 @@ class INIStrategy(Strategy):
             parser.read_file(fp)
         if section not in parser:
             raise SettingsFileSectionNotFoundError(section)
+        settings = OrderedDict()
         extends = parser[section].get('extends')
-        settings = {}
         if extends:
             extends = self.decode_value(extends)
             extends, extends_section = self.parse_file_name_and_section(

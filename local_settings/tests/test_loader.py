@@ -75,6 +75,8 @@ class TestLoading(unittest.TestCase):
 
             'STUFF': ['a prepended thing', 'thing', 'another thing'],
 
+            'DEFAULT_ITEMS': ['0', 'b', 'c'],
+
             'BASE': {
                 'setting': 1,
                 'another_setting': 2,
@@ -90,6 +92,7 @@ class TestLoading(unittest.TestCase):
         self.assertEqual(local_setting.value, 'local value')
         self.assertEqual(settings.INTERPOLATED.x, 'value')
         self.assertEqual(settings.get_dotted('INTERPOLATED.x'), 'value')
+        self.assertEqual(settings.DEFAULT_ITEMS, expected['DEFAULT_ITEMS'])
         self.assertEqual(settings, expected)
 
 
@@ -103,3 +106,4 @@ class TestLoadingDerivedSettings(unittest.TestCase):
         settings = self.loader.load({})
         self.assertEqual(settings.BASE.setting, 1)  # not overridden
         self.assertEqual(settings.BASE.another_setting, "overridden")  # not overridden
+        self.assertEqual(settings.DEFAULT_ITEMS, ['first', 'b', 'c'])
