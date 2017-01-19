@@ -73,7 +73,7 @@ class TestLoading(unittest.TestCase):
                 },
             },
 
-            'STUFF': ['thing', 'another thing'],
+            'STUFF': ['a prepended thing', 'thing', 'another thing'],
 
             'BASE': {
                 'setting': 1,
