@@ -98,12 +98,14 @@ class TestLoading(unittest.TestCase):
 
 class TestLoadingDerivedSettings(unittest.TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        cls.loader = Loader(DERIVED_LOCAL_SETTINGS_FILE)
-
     def test_loading_derived_settings(self):
-        settings = self.loader.load({})
+        loader = Loader(DERIVED_LOCAL_SETTINGS_FILE)
+        settings = loader.load({})
         self.assertEqual(settings.BASE.setting, 1)  # not overridden
         self.assertEqual(settings.BASE.another_setting, "overridden")  # not overridden
         self.assertEqual(settings.DEFAULT_ITEMS, ['first', 'b', 'c'])
+
+    def test_loading_derived_settings_where_section_is_not_present_in_derived_settings_file(self):
+        loader = Loader(DERIVED_LOCAL_SETTINGS_FILE + '#test:1')
+        settings = loader.load({})
+        self.assertEqual(settings.ITEM, "item")
