@@ -1,5 +1,9 @@
 # Change Log for django-local-settings
 
+## 1.0.0 - unreleased
+
+In progress...
+
 ## 1.0b3 - 2017-01-19
 
 - Added `PREPEND` settings prefix because sometimes items need to be added to
