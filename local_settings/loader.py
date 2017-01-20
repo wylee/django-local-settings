@@ -51,7 +51,7 @@ class Loader(Base):
         for name, value in self.strategy.read_file(self.file_name, self.section).items():
             value = self.strategy.decode_value(value)
 
-            for prefix in ('EXTRA.', 'SWAP.'):
+            for prefix in ('PREPEND.', 'APPEND.', 'SWAP.'):
                 if name.startswith(prefix):
                     name = name[len(prefix):]
                     name = '{prefix}({name})'.format(**locals())
@@ -68,7 +68,8 @@ class Loader(Base):
 
         settings.pop('extends', None)
         self._interpolate(settings)
-        self._append_extras(settings, settings.pop('EXTRA', None))
+        self._prepend_extras(settings, settings.pop('PREPEND', None))
+        self._append_extras(settings, settings.pop('APPEND', None))
         self._swap_list_items(settings, settings.pop('SWAP', None))
         self._import_from_string(settings, settings.pop('IMPORT_FROM_STRING', None))
 
@@ -192,6 +193,17 @@ class Loader(Base):
             for item in obj:
                 self._interpolate_keys(item, settings)
 
+    def _prepend_extras(self, settings, extras):
+        if not extras:
+            return
+        for name, extra_val in extras.items():
+            if not extra_val:
+                continue
+            current_val = settings.get_dotted(name)
+            if not isinstance(current_val, Sequence):
+                raise TypeError('PREPEND only works with list-type settings')
+            settings.set_dotted(name, extra_val + current_val)
+
     def _append_extras(self, settings, extras):
         if not extras:
             return
@@ -200,7 +212,7 @@ class Loader(Base):
                 continue
             current_val = settings.get_dotted(name)
             if not isinstance(current_val, Sequence):
-                raise TypeError('EXTRA only works with list-type settings')
+                raise TypeError('APPEND only works with list-type settings')
             settings.set_dotted(name, current_val + extra_val)
 
     def _swap_list_items(self, settings, swap):

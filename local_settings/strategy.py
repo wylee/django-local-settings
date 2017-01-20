@@ -4,7 +4,8 @@ import json
 import os
 import pkg_resources
 from abc import ABCMeta, abstractmethod
-from configparser import RawConfigParser
+from collections import OrderedDict
+from configparser import NoSectionError, RawConfigParser
 
 from six import with_metaclass
 
@@ -94,13 +95,29 @@ class Strategy(with_metaclass(ABCMeta)):
 
 class LocalSettingsConfigParser(RawConfigParser):
 
+    def options(self, section):
+        # Order [DEFAULT] options before section options; the default
+        # implementation orders them after.
+        options = self._defaults.copy()
+        try:
+            options.update(self._sections[section])
+        except KeyError:
+            raise NoSectionError(section) from None
+        return list(options.keys())
+
     def optionxform(self, option):
+        # Don't alter option names; the default implementation lower
+        # cases them.
         return option
 
 
 class INIStrategy(Strategy):
 
     file_types = ('ini',)
+
+    def __init__(self):
+        super().__init__()
+        self.section_found_while_reading = False
 
     def read_file(self, file_name, section=None):
         """Read settings from specified ``section`` of config file."""
@@ -110,16 +127,28 @@ class INIStrategy(Strategy):
         parser = self.make_parser()
         with open(file_name) as fp:
             parser.read_file(fp)
-        if section not in parser:
-            raise SettingsFileSectionNotFoundError(section)
-        extends = parser[section].get('extends')
-        settings = {}
+
+        settings = OrderedDict()
+
+        if parser.has_section(section):
+            section_dict = parser[section]
+            self.section_found_while_reading = True
+        else:
+            section_dict = parser.defaults().copy()
+
+        extends = section_dict.get('extends')
+
         if extends:
             extends = self.decode_value(extends)
             extends, extends_section = self.parse_file_name_and_section(
                 extends, extender=file_name, extender_section=section)
             settings.update(self.read_file(extends, extends_section))
-        settings.update(parser[section])
+
+        settings.update(section_dict)
+
+        if not self.section_found_while_reading:
+            raise SettingsFileSectionNotFoundError(section)
+
         return settings
 
     def write_settings(self, settings, file_name, section):
