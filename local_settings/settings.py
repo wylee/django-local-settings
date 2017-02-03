@@ -60,11 +60,9 @@ class Settings(dict):
     """
 
     def __init__(self, *args, **kwargs):
+        # Call our update() instead of super().__init__() so that our
+        # __setitem__() will be used.
         self.update(*args, **kwargs)
-        super(Settings, self).__init__(*args, **kwargs)
-        for k, v in self.items():
-            if isinstance(v, Mapping):
-                super(Settings, self).__setitem__(k, Settings(v))
 
     def __setitem__(self, name, value):
         if isinstance(value, Mapping):
