@@ -199,8 +199,10 @@ class Settings(dict):
             if segment not in obj:
                 obj[segment] = value
         elif isinstance(obj, Sequence):
-            while segment >= len(obj):
-                obj.append(PLACEHOLDER)
+            old_len = len(obj)
+            new_len = segment + 1
+            if new_len > old_len:
+                obj.extend([PLACEHOLDER] * (new_len - old_len))
             if obj[segment] is PLACEHOLDER:
                 obj[segment] = value
 
