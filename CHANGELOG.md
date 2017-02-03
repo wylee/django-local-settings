@@ -1,8 +1,13 @@
 # Change Log for django-local-settings
 
-## 1.0.0 - unreleased
+## 1.0b4 - 2017-02-03
 
-In progress...
+- Add support for Django 1.10. Note in the README that it's supported, install
+  it by default in development, and add it to tox.ini.
+- Start supporting Python 3.6 and Django 1.11. This is provisional for the time
+  being since Django 1.11 is still in alpha.
+- Improve some internal bits in the `Settings` class.
+- Improve tox config; test all Django versions for each Python version in order.
 
 ## 1.0b3 - 2017-01-19
 
