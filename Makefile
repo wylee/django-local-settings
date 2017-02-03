@@ -52,6 +52,8 @@ clean-sdist:
 
 upload: sdist
 	scp $(sdist) $(upload_path)
+upload-to-pypi:
+	python setup.py sdist upload
 
 clean: clean-pyc
 clean-all: clean-install clean-pyc clean-sdist clean-venv
@@ -61,6 +63,6 @@ clean-pyc:
 	find . -name '*.py?' -type f -print0 | xargs -0 rm
 
 .PHONY = \
-    init reinit venv install reinstall test coverage sdist upload \
+    init reinit venv install reinstall test coverage sdist upload upload-to-pypi \
     clean-venv clean-install clean-sdist \
     clean clean-all clean-pyc
