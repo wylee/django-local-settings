@@ -54,7 +54,7 @@ setup(
             'coverage>=4',
             django_spec,
             'flake8',
-            'tox>=2.3.1',
+            'tox>=2.6.0',
         ],
     },
     classifiers=[
