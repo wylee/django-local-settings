@@ -1,5 +1,9 @@
 # Change Log for django-local-settings
 
+## 1.0.0 - unreleased
+
+In progress...
+
 ## 1.0b4 - 2017-02-03
 
 - Add support for Django 1.10. Note in the README that it's supported, install
