@@ -7,7 +7,7 @@ from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
 from configparser import NoSectionError, RawConfigParser
 
-from six import with_metaclass
+from six import raise_from, with_metaclass
 
 from .exc import SettingsFileNotFoundError, SettingsFileSectionNotFoundError
 
@@ -102,7 +102,7 @@ class LocalSettingsConfigParser(RawConfigParser):
         try:
             options.update(self._sections[section])
         except KeyError:
-            raise NoSectionError(section) from None
+            raise_from(NoSectionError(section), None)
         return list(options.keys())
 
     def optionxform(self, option):
@@ -116,7 +116,7 @@ class INIStrategy(Strategy):
     file_types = ('ini',)
 
     def __init__(self):
-        super().__init__()
+        super(INIStrategy, self).__init__()
         self.section_found_while_reading = False
 
     def read_file(self, file_name, section=None):

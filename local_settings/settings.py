@@ -7,122 +7,50 @@ import six
 from .util import NO_DEFAULT, NO_DEFAULT as PLACEHOLDER
 
 
-class Settings(dict):
+class DottedAccessMixin:
 
-    """Dict-ish container for settings.
+    """Provides dotted access to nested items in dict-like containers.
 
-    Provides access to settings via regular item access, attribute
-    access, and dotted names::
+    Mix with any type that supports item access to allow dotted access
+    to nested items.
 
-        >>> settings = Settings()
-        >>> settings['name'] = 'name'
-        >>> settings['name']
-        'name'
-        >>> settings.name = 'name'
-        >>> settings.name
-        'name'
-        >>> settings.set_dotted('NAMESPACE.name', 'nested name')
-        >>> settings.get_dotted('NAMESPACE.name')
-        'nested name'
+    >>> class MyMapping(dict, DottedAccessMixin):
+    ...
+    ...     pass
+    >>>
+    >>> my_map = MyMapping({'a': {'b': {'c': '123', '3': ['x', 'y', 'z']}}})
 
-    These are all equivalent::
+    Check whether an item is in the container, then get it:
 
-        >>> settings['NAMESPACE']['name']
-        'nested name'
-        >>> settings.NAMESPACE.name
-        'nested name'
-        >>> settings.get_dotted('NAMESPACE.name')
-        'nested name'
+    >>> my_map.contains_dotted('a.b.c')
+    True
+    >>> my_map.get_dotted('a.b.c')
+    '123'
 
-    Adding an item with a dotted name will create nested settings like
-    so::
+    Get an item from a sequence (the 3 is wrapped in parentheses to keep
+    it from being interpreted as a sequence index):
 
-        >>> settings = Settings()
-        >>> settings.set_dotted('NAMESPACE.name', 'nested name')
-        >>> settings
-        {'NAMESPACE': {'name': 'nested name'}}
+    >>> my_map.contains_dotted('a.b.(3).0')
+    True
+    >>> my_map.get_dotted('a.b.(3).0')
+    'x'
 
-    Implementation Notes
-    ====================
+    Try getting an item that doesn't exist (without a default, this
+    would raise a KeyError):
 
-    This is a subclass of dict because certain settings consumers, such
-    as ``logging.dictConfig`` from the standard library, won't work with
-    a non-dict mapping type because they do things like
-    ``isinstance(something, dict)``.
+    >>> my_map.get_dotted('a.b.see', default=None)
 
-    Where a setting has a name that's the same as an attribute name
-    (e.g., ``get`` or ``update``), the attribute will take precedence.
-    To get at such a setting, item access must be used. This is
-    necessary because we can't allow settings to override the dict
-    interface (because this might cause problems with outside consumers
-    of the settings that aren't aware of the magic we're doing here).
+    Add the missing item and then get it:
+
+    >>> my_map.contains_dotted('a.b.see')
+    False
+    >>> my_map.set_dotted('a.b.see', 1)
+    >>> my_map.contains_dotted('a.b.see')
+    True
+    >>> my_map.get_dotted('a.b.see')
+    1
 
     """
-
-    def __init__(self, *args, **kwargs):
-        # Call our update() instead of super().__init__() so that our
-        # __setitem__() will be used.
-        self.update(*args, **kwargs)
-
-    def __setitem__(self, name, value):
-        if isinstance(value, Mapping):
-            value = Settings(value)
-        super(Settings, self).__setitem__(name, value)
-
-    # Implementation of attribute access.
-
-    def __getattr__(self, name):
-        # This is only invoked if the named attribute isn't found as an
-        # instance or class attribute of the Settings instance. In other
-        # words, this will only be called for settings stored in the
-        # instance's internal dict storage. For methods such as `get`,
-        # this won't be called.
-        return self[name]
-
-    def __setattr__(self, name, value):
-        self[name] = value
-
-    # Support for copying and pickling.
-
-    def __getstate__(self):
-        return self.__dict__
-
-    def __setstate__(self, state):
-        self.__dict__.update(state)
-
-    # The following are required because these methods on the built-in
-    # dict type will *not* call our __setitem__ method above. These
-    # implementations were copied from collections.MutableMapping in the
-    # standard library and tweaked slightly.
-
-    def setdefault(self, name, default=None):
-        try:
-            return self[name]
-        except KeyError:
-            self[name] = default
-        return self[name]
-
-    def update(*args, **kwargs):
-        if len(args) > 2:
-            raise TypeError(
-                'update() takes at most 2 positional arguments ({} given)'.format(len(args)))
-        elif not args:
-            raise TypeError('update() takes at least 1 argument (0 given)')
-        self = args[0]
-        other = args[1] if len(args) >= 2 else ()
-        if isinstance(other, Mapping):
-            for name in other:
-                self[name] = other[name]
-        elif hasattr(other, 'keys'):
-            for name in other.keys():
-                self[name] = other[name]
-        else:
-            for name, value in other:
-                self[name] = value
-        for name, value in kwargs.items():
-            self[name] = value
-
-    # Implementation of dotted item access.
 
     def contains_dotted(self, name):
         try:
@@ -332,3 +260,133 @@ class Settings(dict):
                 return name
             return int(name)
         return name
+
+
+class DottedAccessDict(dict, DottedAccessMixin):
+
+    """Default implementation of a dict providing dotted item access.
+
+    Typically used to wrap an existing dict to get dotted item access:
+
+    >>> d = {'a': {'b': 'c'}}
+    >>> d = DottedAccessDict(d)
+    >>> d.get_dotted('a.b')
+    'c'
+
+    """
+
+
+class Settings(dict, DottedAccessMixin):
+
+    """Dict-ish container for settings.
+
+    Provides access to settings via regular item access, attribute
+    access, and dotted names::
+
+        >>> settings = Settings()
+        >>> settings['name'] = 'name'
+        >>> settings['name']
+        'name'
+        >>> settings.name = 'name'
+        >>> settings.name
+        'name'
+        >>> settings.set_dotted('NAMESPACE.name', 'nested name')
+        >>> settings.get_dotted('NAMESPACE.name')
+        'nested name'
+
+    These are all equivalent::
+
+        >>> settings['NAMESPACE']['name']
+        'nested name'
+        >>> settings.NAMESPACE.name
+        'nested name'
+        >>> settings.get_dotted('NAMESPACE.name')
+        'nested name'
+
+    Adding an item with a dotted name will create nested settings like
+    so::
+
+        >>> settings = Settings()
+        >>> settings.set_dotted('NAMESPACE.name', 'nested name')
+        >>> settings
+        {'NAMESPACE': {'name': 'nested name'}}
+
+    Implementation Notes
+    ====================
+
+    This is a subclass of dict because certain settings consumers, such
+    as ``logging.dictConfig`` from the standard library, won't work with
+    a non-dict mapping type because they do things like
+    ``isinstance(something, dict)``.
+
+    Where a setting has a name that's the same as an attribute name
+    (e.g., ``get`` or ``update``), the attribute will take precedence.
+    To get at such a setting, item access must be used. This is
+    necessary because we can't allow settings to override the dict
+    interface (because this might cause problems with outside consumers
+    of the settings that aren't aware of the magic we're doing here).
+
+    """
+
+    def __init__(self, *args, **kwargs):
+        # Call our update() instead of super().__init__() so that our
+        # __setitem__() will be used.
+        self.update(*args, **kwargs)
+
+    def __setitem__(self, name, value):
+        if isinstance(value, Mapping):
+            value = Settings(value)
+        super(Settings, self).__setitem__(name, value)
+
+    # Implementation of attribute access.
+
+    def __getattr__(self, name):
+        # This is only invoked if the named attribute isn't found as an
+        # instance or class attribute of the Settings instance. In other
+        # words, this will only be called for settings stored in the
+        # instance's internal dict storage. For methods such as `get`,
+        # this won't be called.
+        return self[name]
+
+    def __setattr__(self, name, value):
+        self[name] = value
+
+    # Support for copying and pickling.
+
+    def __getstate__(self):
+        return self.__dict__
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+
+    # The following are required because these methods on the built-in
+    # dict type will *not* call our __setitem__ method above. These
+    # implementations were copied from collections.MutableMapping in the
+    # standard library and tweaked slightly.
+
+    def setdefault(self, name, default=None):
+        try:
+            return self[name]
+        except KeyError:
+            self[name] = default
+        return self[name]
+
+    def update(*args, **kwargs):
+        if len(args) > 2:
+            raise TypeError(
+                'update() takes at most 2 positional arguments ({} given)'.format(len(args)))
+        elif not args:
+            raise TypeError('update() takes at least 1 argument (0 given)')
+        self = args[0]
+        other = args[1] if len(args) >= 2 else ()
+        if isinstance(other, Mapping):
+            for name in other:
+                self[name] = other[name]
+        elif hasattr(other, 'keys'):
+            for name in other.keys():
+                self[name] = other[name]
+        else:
+            for name, value in other:
+                self[name] = value
+        for name, value in kwargs.items():
+            self[name] = value
