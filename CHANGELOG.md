@@ -1,5 +1,9 @@
 # Change Log for django-local-settings
 
+## 1.0.0 - unreleased
+
+In progress...
+
 ## 1.0b5 - 2017-02-06
 
 - Moved the functionality for accessing nested items via dotted names
