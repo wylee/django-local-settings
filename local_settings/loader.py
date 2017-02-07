@@ -1,4 +1,4 @@
-from collections import Mapping, MutableSequence, Sequence
+from collections import Mapping, MutableSequence, OrderedDict, Sequence
 
 from django.utils.module_loading import import_string
 
@@ -46,25 +46,37 @@ class Loader(Base):
         """
         is_valid_key = lambda k: k.isupper() and not k.startswith('_')
         base_settings = {k: v for (k, v) in base_settings.items() if is_valid_key(k)}
+
+        # Settings are read from the settings file into this dict where
+        # their raw values are stored without any processing.
+        raw_settings = OrderedDict()
+
+        # This contains the base settings, including `LocalSetting`s,
+        # loaded from the Django settings module. Raw values will be
+        # decoded and inserted after all settings are read.
         settings = Settings(base_settings)
 
         for name, value in self.strategy.read_file(self.file_name, self.section).items():
-            value = self.strategy.decode_value(value)
-
             for prefix in ('PREPEND.', 'APPEND.', 'SWAP.'):
                 if name.startswith(prefix):
                     name = name[len(prefix):]
                     name = '{prefix}({name})'.format(**locals())
 
-            # If there's already a LocalSetting in this slot, set the
-            # value of that LocalSetting and put it in the registry so
-            # it can be easily retrieved later.
+            # Keep track of `LocalSetting`s so they can be easily
+            # retrieved (and resolved) later.
             current_value = settings.get_dotted(name, None)
             if isinstance(current_value, LocalSetting):
-                current_value.value = value
                 self.registry[current_value] = name
 
+            raw_settings[name] = value
+
+        for name in raw_settings:
+            value = raw_settings[name]
+            value = self.strategy.decode_value(value)
             settings.set_dotted(name, value)
+
+        for local_setting, name in self.registry.items():
+            local_setting.value = settings.get_dotted(name)
 
         settings.pop('extends', None)
         self._interpolate(settings)
