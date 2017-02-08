@@ -6,7 +6,7 @@ from six import string_types
 
 from .base import Base
 from .checker import Checker
-from .settings import Settings
+from .settings import DottedAccessDict, Settings
 from .types import LocalSetting
 
 from .strategy import INIJSONStrategy
@@ -45,41 +45,43 @@ class Loader(Base):
 
         """
         is_valid_key = lambda k: k.isupper() and not k.startswith('_')
-        base_settings = {k: v for (k, v) in base_settings.items() if is_valid_key(k)}
 
-        # Settings are read from the settings file into this dict where
-        # their raw values are stored without any processing.
+        # Base settings, including `LocalSetting`s, loaded from the
+        # Django settings module.
+        valid_keys = (k for k in base_settings if is_valid_key(k))
+        base_settings = DottedAccessDict((k, base_settings[k]) for k in valid_keys)
+
+        # Settings read from the settings file; values are unprocessed.
+        settings_from_file = self.strategy.read_file(self.file_name, self.section)
+        settings_from_file.pop('extends', None)
+
+        # Settings read from file are copied here. We do this because
+        # some of the setting names may need to be adjusted and we need
+        # to keep them in their original order.
         raw_settings = OrderedDict()
 
-        # This contains the base settings, including `LocalSetting`s,
-        # loaded from the Django settings module. Raw values will be
-        # decoded and inserted after all settings are read.
+        # The fully resolved settings.
         settings = Settings(base_settings)
 
-        for name, value in self.strategy.read_file(self.file_name, self.section).items():
+        for name, value in settings_from_file.items():
             for prefix in ('PREPEND.', 'APPEND.', 'SWAP.'):
                 if name.startswith(prefix):
                     name = name[len(prefix):]
                     name = '{prefix}({name})'.format(**locals())
+                    break
 
-            # Keep track of `LocalSetting`s so they can be easily
-            # retrieved (and resolved) later.
-            current_value = settings.get_dotted(name, None)
+            # See if this setting corresponds to a `LocalSetting`. If
+            # so, note that the `LocalSetting` has a value by putting it
+            # in the registry. This also makes it easy to retrieve the
+            # `LocalSetting` later so its value can be set.
+            current_value = base_settings.get_dotted(name, None)
             if isinstance(current_value, LocalSetting):
                 self.registry[current_value] = name
 
             raw_settings[name] = value
 
-        for name in raw_settings:
-            value = raw_settings[name]
-            value = self.strategy.decode_value(value)
-            settings.set_dotted(name, value)
-
-        for local_setting, name in self.registry.items():
-            local_setting.value = settings.get_dotted(name)
-
-        settings.pop('extends', None)
-        self._interpolate(settings)
+        self._resolve_values(base_settings, raw_settings, settings)
+        self._interpolate_keys(settings, settings)
         self._prepend_extras(settings, settings.pop('PREPEND', None))
         self._append_extras(settings, settings.pop('APPEND', None))
         self._swap_list_items(settings, settings.pop('SWAP', None))
@@ -89,13 +91,6 @@ class Loader(Base):
 
     # Post-processing
 
-    def _interpolate(self, settings):
-        interpolated = True
-        while interpolated:
-            interpolated = []
-            self._interpolate_values(settings, settings, interpolated)
-        self._interpolate_keys(settings, settings)
-
     def _inject(self, settings, value):
         """Inject ``obj`` into ``value``.
 
@@ -103,7 +98,8 @@ class Loader(Base):
         replace each group with the str value of the named setting.
 
         Args:
-            settings (object): An object, usually a dict
+            settings: A settings object that provides the dotted access
+                interface
             value (str): The value to inject obj into
 
         Returns:
@@ -172,22 +168,41 @@ class Loader(Base):
 
         return new_value, (new_value != value)
 
-    def _interpolate_values(self, obj, settings, interpolated):
+    def _resolve_values(self, base_settings, raw_settings, settings):
+        # - Decode raw values according to strategy
+        # - Resolve local settings values
+        # - Interpolate all settings values
+
+        for name in raw_settings:
+            value = raw_settings[name]
+            value = self.strategy.decode_value(value)
+            settings.set_dotted(name, value)
+
+        for local_setting, name in self.registry.items():
+            local_setting.value = settings.get_dotted(name)
+
+        interpolated = []
+        while interpolated is not None:
+            _, interpolated = self._interpolate_values(settings, settings)
+
+    def _interpolate_values(self, obj, settings, _interpolated=None):
+        if _interpolated is None:
+            _interpolated = []
         if isinstance(obj, Mapping):
             for k, v in obj.items():
-                obj[k] = self._interpolate_values(v, settings, interpolated)
+                obj[k], _interpolated = self._interpolate_values(v, settings, _interpolated)
         elif isinstance(obj, MutableSequence):
             for i, item in enumerate(obj):
-                obj[i] = self._interpolate_values(item, settings, interpolated)
+                obj[i], _interpolated = self._interpolate_values(item, settings, _interpolated)
         elif isinstance(obj, Sequence) and not isinstance(obj, string_types):
-            obj = obj.__class__(
-                self._interpolate_values(item, settings, interpolated) for item in obj)
+            obj, _interpolated = obj.__class__(
+                self._interpolate_values(item, settings, _interpolated) for item in obj)
         elif isinstance(obj, string_types):
             new_value, changed = self._inject(settings, obj)
             if changed:
                 obj = new_value
-                interpolated.append((obj, new_value))
-        return obj
+                _interpolated.append((obj, new_value))
+        return obj, _interpolated or None
 
     def _interpolate_keys(self, obj, settings):
         if isinstance(obj, Mapping):
