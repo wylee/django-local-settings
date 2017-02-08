@@ -91,83 +91,6 @@ class Loader(Base):
 
     # Post-processing
 
-    def _inject(self, settings, value):
-        """Inject ``obj`` into ``value``.
-
-        Go through value looking for ``{{SETTING_NAME}}`` groups and
-        replace each group with the str value of the named setting.
-
-        Args:
-            settings: A settings object that provides the dotted access
-                interface
-            value (str): The value to inject obj into
-
-        Returns:
-            (str, bool): The new value and whether the new value is
-                different from the original value
-
-        """
-        assert isinstance(value, string_types), 'Expected str; got {0.__class__}'.format(value)
-
-        begin, end = '{{', '}}'
-
-        if begin not in value:
-            return value, False
-
-        new_value = value
-        begin_pos, end_pos = 0, None
-        len_begin, len_end = len(begin), len(end)
-        len_value = len(new_value)
-
-        while begin_pos < len_value:
-            # Find next {{.
-            begin_pos = new_value.find(begin, begin_pos)
-
-            if begin_pos == -1:
-                break
-
-            # Save everything before {{.
-            before = new_value[:begin_pos]
-
-            # Find }} after {{.
-            begin_pos += len_begin
-            end_pos = new_value.find(end, begin_pos)
-            if end_pos == -1:
-                raise ValueError('Unmatched {begin}...{end} in {value}'.format(**locals()))
-
-            # Get name between {{ and }}, ignoring leading and trailing
-            # whitespace.
-            name = new_value[begin_pos:end_pos]
-            name = name.strip()
-
-            if not name:
-                raise ValueError('Empty name in {value}'.format(**locals()))
-
-            # Save everything after }}.
-            after_pos = end_pos + len_end
-            try:
-                after = new_value[after_pos:]
-            except IndexError:
-                # Reached end of value.
-                after = ''
-
-            # Retrieve string value for named setting (the "injection
-            # value").
-            try:
-                injection_value = str(settings.get_dotted(name))
-            except KeyError:
-                raise ValueError('{name} not found in {obj}'.format(**locals()))
-
-            # Combine before, inject value, and after to get the new
-            # value.
-            new_value = ''.join((before, injection_value, after))
-
-            # Continue after injected value.
-            begin_pos = len(before) + len(injection_value)
-            len_value = len(new_value)
-
-        return new_value, (new_value != value)
-
     def _resolve_values(self, base_settings, raw_settings, settings):
         # - Decode raw values according to strategy
         # - Resolve local settings values
@@ -262,3 +185,80 @@ class Loader(Base):
             current_val = settings.get_dotted(name)
             if isinstance(current_val, string_types):
                 settings.set_dotted(name, import_string(current_val))
+
+    def _inject(self, settings, value):
+        """Inject ``obj`` into ``value``.
+
+        Go through value looking for ``{{SETTING_NAME}}`` groups and
+        replace each group with the str value of the named setting.
+
+        Args:
+            settings: A settings object that provides the dotted access
+                interface
+            value (str): The value to inject obj into
+
+        Returns:
+            (str, bool): The new value and whether the new value is
+                different from the original value
+
+        """
+        assert isinstance(value, string_types), 'Expected str; got {0.__class__}'.format(value)
+
+        begin, end = '{{', '}}'
+
+        if begin not in value:
+            return value, False
+
+        new_value = value
+        begin_pos, end_pos = 0, None
+        len_begin, len_end = len(begin), len(end)
+        len_value = len(new_value)
+
+        while begin_pos < len_value:
+            # Find next {{.
+            begin_pos = new_value.find(begin, begin_pos)
+
+            if begin_pos == -1:
+                break
+
+            # Save everything before {{.
+            before = new_value[:begin_pos]
+
+            # Find }} after {{.
+            begin_pos += len_begin
+            end_pos = new_value.find(end, begin_pos)
+            if end_pos == -1:
+                raise ValueError('Unmatched {begin}...{end} in {value}'.format(**locals()))
+
+            # Get name between {{ and }}, ignoring leading and trailing
+            # whitespace.
+            name = new_value[begin_pos:end_pos]
+            name = name.strip()
+
+            if not name:
+                raise ValueError('Empty name in {value}'.format(**locals()))
+
+            # Save everything after }}.
+            after_pos = end_pos + len_end
+            try:
+                after = new_value[after_pos:]
+            except IndexError:
+                # Reached end of value.
+                after = ''
+
+            # Retrieve string value for named setting (the "injection
+            # value").
+            try:
+                injection_value = str(settings.get_dotted(name))
+            except KeyError:
+                raise ValueError('{name} not found in {obj}'.format(**locals()))
+
+            # Combine before, inject value, and after to get the new
+            # value.
+            new_value = ''.join((before, injection_value, after))
+
+            # Continue after injected value.
+            begin_pos = len(before) + len(injection_value)
+            len_value = len(new_value)
+
+        return new_value, (new_value != value)
