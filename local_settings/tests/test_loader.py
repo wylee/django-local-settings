@@ -21,10 +21,12 @@ class TestLoading(unittest.TestCase):
         self.assertEqual(local_setting.value, 'default value')
 
         settings = self.loader.load({
+            'BASE_SETTING': '{{PACKAGE}}',
             'LOCAL_SETTING': local_setting,
         })
 
         expected = {
+            'BASE_SETTING': 'local_settings',
             'LOCAL_SETTING': 'local value',
 
             'PACKAGE': 'local_settings',
@@ -43,6 +45,7 @@ class TestLoading(unittest.TestCase):
             },
 
             'LIST': ['a', 'b'],
+            'OTHER_LIST': ['a', 'b'],
 
             'TEMPLATES': [
                 {
@@ -86,7 +89,17 @@ class TestLoading(unittest.TestCase):
                 'PATH': os.path,
             },
 
-            'FORMAT_STRING': '1{format}'
+            'FORMAT_STRING': '1{format}',
+
+            'NUMBER': 1,
+            'OTHER_NUMBER': 1,
+
+            'LIST1': [1, 2],
+            'LIST2': [1, 2],
+            'LIST3': [1, 2],
+
+            'DICT': {'1': 1, '2': [[1, 2]]},
+            'OTHER_DICT': {'1': 1, '2': [[1, 2]]},
         }
         self.assertEqual(local_setting.default, 'default value')
         self.assertEqual(local_setting.value, 'local value')
