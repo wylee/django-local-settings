@@ -1,5 +1,9 @@
 # Change Log for django-local-settings
 
+## 1.0.0 - unreleased
+
+In progress...
+
 ## 1.0b6 - 2017-02-28
 
 - Enable interpolation of all types of settings values, not just strings. For
