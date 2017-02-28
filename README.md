@@ -42,6 +42,8 @@ Once the local settings are defined, *any missing settings will be prompted for 
 - Local settings can be defined with doc strings
 - Local settings can be nested in settings lists and dicts
 - Settings files can extend from each other
+- Settings values can be injected into other settings values using a special syntax (AKA
+  interpolation, similar to the standard library's `configparser`)
 - Includes a script to easily generate local settings files for different environments
 - Supports Python 2.7 - 3.6 (using [six](http://pythonhosted.org/six/))
 - Supports Django 1.7 - 1.10 (w/ provisional support for Django 1.11)
@@ -71,6 +73,9 @@ Once the local settings are defined, *any missing settings will be prompted for 
 
     As you can see, local settings can be defined anywhere within the definition of a top level
     setting. They can also have doc strings, which are displayed when prompting.
+    
+    This also demonstrates interpolation. The `DATABASES.default.NAME` setting will be replaced
+    with the `PACKAGE` setting, so that its default value is effectively `'vcp'`.
 
 - After all the local settings are defined, add the following lines:
 
