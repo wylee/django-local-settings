@@ -1,8 +1,15 @@
 # Change Log for django-local-settings
 
-## 1.0.0 - unreleased
+## 1.0b6 - 2017-02-28
 
-In progress...
+- Enable interpolation of all types of settings values, not just strings. For
+  example, the following now works as expected:
+
+      ITEMS = ["a", "b", "c"]
+      SOMETHING.x.y.z = {{ITEMS}}
+
+  `SOMETHING.x.y.z` will be equal to `["a", "b", "c"]` after interpolation.
+  Previously, this would cause an error when the settings file was parsed.
 
 ## 1.0b5 - 2017-02-06
 
