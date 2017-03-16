@@ -57,11 +57,11 @@ Once the local settings are defined, *any missing settings will be prompted for 
 
 - Then define some base settings and local settings:
 
-        PACKAGE = 'vcp'
+        PACKAGE = 'top_level_package_name'
         DEBUG = LocalSetting(default=False)
         DATABASES = {
             'default': {
-                'ENGINE': 'django.db.backends.postgresql_pyscopg2',
+                'ENGINE': 'django.db.backends.postgresql',
                 'NAME': LocalSetting(default='{{PACKAGE}}'),
                 'USER': LocalSetting(''),
                 'PASSWORD': SecretSetting(),
@@ -73,9 +73,9 @@ Once the local settings are defined, *any missing settings will be prompted for 
 
     As you can see, local settings can be defined anywhere within the definition of a top level
     setting. They can also have doc strings, which are displayed when prompting.
-    
+
     This also demonstrates interpolation. The `DATABASES.default.NAME` setting will be replaced
-    with the `PACKAGE` setting, so that its default value is effectively `'vcp'`.
+    with the `PACKAGE` setting, so that its default value is effectively `'top_level_package'`.
 
 - After all the local settings are defined, add the following lines:
 
@@ -99,7 +99,7 @@ Once the local settings are defined, *any missing settings will be prompted for 
     Note: You could just write `globals().update(load_and_check_settings(globals()))`. The spelling
     above is just intended to make it more clear what's happening.
 
-- Now you can run any manage.py command, and you will be prompted to enter any missing local
+- Now you can run any `manage.py` command, and you will be prompted to enter any missing local
   settings. On the first run, the settings file will be created. On subsequent runs when new local
   settings are added to the settings module, the settings file will be appended to.
 
