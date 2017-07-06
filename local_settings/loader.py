@@ -126,23 +126,23 @@ class Loader(Base):
         if _interpolated is None:
             _interpolated = []
 
-        if isinstance(obj, Mapping):
+        if isinstance(obj, string_types):
+            new_value, changed = self._inject(obj, settings)
+            if changed:
+                _interpolated.append((obj, new_value))
+                obj = new_value
+        elif isinstance(obj, Mapping):
             for k, v in obj.items():
                 obj[k], _interpolated = self._interpolate_values_inner(v, settings, _interpolated)
         elif isinstance(obj, MutableSequence):
             for i, v in enumerate(obj):
                 obj[i], _interpolated = self._interpolate_values_inner(v, settings, _interpolated)
-        elif isinstance(obj, Sequence) and not isinstance(obj, string_types):
+        elif isinstance(obj, Sequence):
             items = []
             for v in obj:
                 item, _interpolated = self._interpolate_values_inner(v, settings, _interpolated)
                 items.append(item)
             obj = obj.__class__(items)
-        elif isinstance(obj, string_types):
-            new_value, changed = self._inject(obj, settings)
-            if changed:
-                _interpolated.append((obj, new_value))
-                obj = new_value
 
         return obj, _interpolated or None
 
