@@ -1,8 +1,10 @@
 # Change Log for django-local-settings
 
-## 1.0.0 - unreleased
+## 1.0b7 - 2017-07-06
 
-In progress...
+- [#4] Fixed a bug with loading/interpolation of tuples (and other non-mutable
+  sequences).
+- Declared official support for Django 1.11.
 
 ## 1.0b6 - 2017-02-28
 
