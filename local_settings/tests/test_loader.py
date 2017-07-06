@@ -11,9 +11,8 @@ DERIVED_LOCAL_SETTINGS_FILE = os.path.join(os.path.dirname(__file__), 'local.der
 
 class TestLoading(unittest.TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        cls.loader = Loader(LOCAL_SETTINGS_FILE)
+    def setUp(self):
+        self.loader = Loader(LOCAL_SETTINGS_FILE)
 
     def test_loading(self):
         local_setting = LocalSetting('default value')
@@ -23,11 +22,33 @@ class TestLoading(unittest.TestCase):
         settings = self.loader.load({
             'BASE_SETTING': '{{PACKAGE}}',
             'LOCAL_SETTING': local_setting,
+            'TUPLE_SETTING': ('a', 'b', 'c'),
+            'LIST_SETTING': ['a', 'b', 'c'],
+            'DICT_SETTING': {'a': 'b'},
+            'NESTED_SETTING': {
+                'list': ['a', 'b'],
+                'tuple': ('a', 'b'),
+                'dict': {
+                    'list': [1, 2],
+                    'tuple': (1, 2),
+                }
+            }
         })
 
         expected = {
             'BASE_SETTING': 'local_settings',
             'LOCAL_SETTING': 'local value',
+            'TUPLE_SETTING': ('a', 'b', 'c'),
+            'LIST_SETTING': ['a', 'b', 'c'],
+            'DICT_SETTING': {'a': 'b'},
+            'NESTED_SETTING': {
+                'list': ['a', 'b'],
+                'tuple': ('a', 'b'),
+                'dict': {
+                    'list': [1, 2],
+                    'tuple': (1, 2),
+                }
+            },
 
             'PACKAGE': 'local_settings',
 
@@ -107,6 +128,50 @@ class TestLoading(unittest.TestCase):
         self.assertEqual(settings.get_dotted('INTERPOLATED.x'), 'value')
         self.assertEqual(settings.DEFAULT_ITEMS, expected['DEFAULT_ITEMS'])
         self.assertEqual(settings, expected)
+
+
+class TestLoadTypes(unittest.TestCase):
+
+    def setUp(self):
+        settings_file = os.path.join(os.path.dirname(__file__), 'local.cfg#test:empty')
+        self.loader = Loader(settings_file)
+
+    def test_load_list(self):
+        settings = self.loader.load({
+            'LIST': ['a', 'b'],
+        })
+        self.assertIsInstance(settings.LIST, list)
+
+    def test_load_2_tuple(self):
+        settings = self.loader.load({
+            'TUPLE': ('a', 'b'),
+        })
+        self.assertIsInstance(settings.TUPLE, tuple)
+        self.assertEqual(settings.TUPLE, ('a', 'b'))
+
+    def test_load_3_tuple(self):
+        settings = self.loader.load({
+            'TUPLE': ('a', 'b', 'c'),
+        })
+        self.assertIsInstance(settings.TUPLE, tuple)
+        self.assertEqual(settings.TUPLE, ('a', 'b', 'c'))
+
+    def test_load_nested_tuple(self):
+        settings = self.loader.load({
+            'DICT': {
+                'TUPLE': ('a', 'b', 'c'),
+            }
+        })
+        self.assertIsInstance(settings.DICT.TUPLE, tuple)
+        self.assertEqual(settings.DICT.TUPLE, ('a', 'b', 'c'))
+
+    def test_load_other_sequence_type(self):
+        MyList = type('MyList', (list,), {})
+        settings = self.loader.load({
+            'MY_LIST': MyList(('a', 'b', 'c')),
+        })
+        self.assertIsInstance(settings.MY_LIST, MyList)
+        self.assertEqual(settings.MY_LIST, ['a', 'b', 'c'])
 
 
 class TestLoadingDerivedSettings(unittest.TestCase):
