@@ -1,5 +1,9 @@
 # Change Log for django-local-settings
 
+## 1.0.0 - unreleased
+
+In progress...
+
 ## 1.0b7 - 2017-07-06
 
 - [#4] Fixed a bug with loading/interpolation of tuples (and other non-mutable
