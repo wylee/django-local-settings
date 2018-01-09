@@ -186,7 +186,7 @@ class DottedAccessMixin:
             >>> settings._parse_path('WORD.({{x.y.z}}XYZ)')
             ['WORD', '{{x.y.z}}XYZ']
 
-        Any segment that A) looks like an int and B) does *not* contain
+        Any segment that A) looks like an int and B) is *not* within
         a (...) or {{...}} group will be converted to an int. Segments
         that start with a leading "0" followed by other digits will not
         be converted.
@@ -195,55 +195,63 @@ class DottedAccessMixin:
         if not path:
             raise ValueError('path cannot be empty')
 
-        segments = []
-        path_iter = zip(iter(path), chain(path[1:], (None,)))
-        if six.PY2:
-            # zip() returns a list on Python 2
-            path_iter = iter(path_iter)
         convert_name = self._convert_name
-        current_segment = []
-        current_segment_contains_group = False
+
+        path_iter = zip(iter(path), chain(path[1:], (None,)))
+
+        # NOTE: zip() returns a list on Python 2
+        path_iter = iter(path_iter) if six.PY2 else path_iter
+
+        stack = []
+        collector = []
+        segments = []
+        group = False
 
         def append_segment():
-            segment = ''.join(current_segment)
-            if not current_segment_contains_group:
+            segment = ''.join(collector)
+            if not group:
                 segment = convert_name(segment)
             segments.append(segment)
-            del current_segment[:]
+            del collector[:]
 
         for c, d in path_iter:
-            if c == '.':
+            if c == '.' and not stack:
                 append_segment()
-                current_segment_contains_group = False
-            elif c == '(':
-                nested = 0
-                for c, d in path_iter:
-                    current_segment.append(c)
-                    if c == '(':
-                        nested += 1
-                    elif c == ')':
-                        if nested:
-                            nested -= 1
-                        else:
-                            current_segment.pop()  # Remove the closing paren
-                            current_segment_contains_group = True
-                            break
-                else:
-                    raise ValueError('Unclosed (...) in %s' % path)
-            elif c == '{' and d == '{':
-                current_segment_contains_group = True
-                current_segment.append(c)
-                for c, d in path_iter:
-                    current_segment.append(c)
-                    if c == '}' and d == '}':
-                        current_segment_contains_group = True
-                        break
-                else:
-                    raise ValueError('Unclosed {{...}} in %s' % path)
-            else:
-                current_segment.append(c)
+                continue
 
-        if current_segment:
+            group = False
+
+            if c == '(':
+                if stack and stack[-1] == '(':
+                    collector.append(c)
+                stack.append(c)
+            elif c == ')':
+                item = stack.pop()
+                if item != '(':
+                    raise ValueError('Unclosed (...) in %s' % path)
+                if stack and stack[-1] == '(':
+                    collector.append(c)
+                group = True
+            elif c == '{' and d == '{':
+                stack.append('{{')
+                collector.append('{{')
+                next(path_iter)
+            elif c == '}' and d == '}':
+                item = stack.pop()
+                if item != '{{':
+                    raise ValueError('Unclosed {{...}} in %s' % path)
+                collector.append('}}')
+                next(path_iter)
+                group = True
+            else:
+                collector.append(c)
+
+        if stack:
+            bracket = stack[-1]
+            close_bracket = ')' if bracket == '(' else '}}'
+            raise ValueError('Unclosed %s...%s in %s' % (bracket, close_bracket, path))
+
+        if collector:
             append_segment()
 
         return segments
