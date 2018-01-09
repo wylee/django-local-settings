@@ -222,64 +222,60 @@ class Loader(Base):
         """
         assert isinstance(value, string_types), 'Expected str; got {0.__class__}'.format(value)
 
-        begin, end = '{{', '}}'
-
-        if begin not in value:
+        if '{{' not in value:
             return value, False
 
         new_value = value
-        begin_pos, end_pos = 0, None
-        len_begin, len_end = len(begin), len(end)
-        len_value = len(new_value)
 
-        while begin_pos < len_value:
-            # Find next {{.
-            begin_pos = new_value.find(begin, begin_pos)
+        begin = '{', '{'
+        end = '}', '}'
 
-            if begin_pos == -1:
+        len_begin = len(begin)
+        len_end = len(end)
+
+        i = 0
+        stack = []
+
+        while True:
+            try:
+                c = new_value[i]
+            except IndexError:
                 break
 
-            # Save everything before {{.
-            before = new_value[:begin_pos]
-
-            # Find }} after {{.
-            begin_pos += len_begin
-            end_pos = new_value.find(end, begin_pos)
-            if end_pos == -1:
-                raise ValueError('Unmatched {begin}...{end} in {value}'.format(**locals()))
-
-            # Get name between {{ and }}, ignoring leading and trailing
-            # whitespace.
-            name = new_value[begin_pos:end_pos]
-            name = name.strip()
-
-            if not name:
-                raise ValueError('Empty name in {value}'.format(**locals()))
-
-            # Save everything after }}.
-            after_pos = end_pos + len_end
             try:
-                after = new_value[after_pos:]
+                d = new_value[i + 1]
             except IndexError:
-                # Reached end of value.
-                after = ''
+                d = ' '
 
-            # Retrieve string value for named setting (the "injection
-            # value").
-            try:
-                injection_value = settings.get_dotted(name)
-            except KeyError:
-                raise KeyError('{name} not found in {settings}'.format(**locals()))
+            cd = c, d
 
-            if not isinstance(injection_value, string_types):
-                injection_value = self.strategy.encode_value(injection_value)
+            if cd == begin:
+                stack.append(i)
+                i += len_begin
+            elif cd == end:
+                # g:h => {{name}}
+                g = stack.pop()
+                h = i + len_end
 
-            # Combine before, inject value, and after to get the new
-            # value.
-            new_value = ''.join((before, injection_value, after))
+                # m:n => name
+                m = g + len_begin
+                n = i
 
-            # Continue after injected value.
-            begin_pos = len(before) + len(injection_value)
-            len_value = len(new_value)
+                name = new_value[m:n]
 
-        return new_value, (new_value != value)
+                try:
+                    v = settings.get_dotted(name)
+                except KeyError:
+                    raise KeyError('{name} not found in {settings}'.format(**locals()))
+                if not isinstance(v, string_types):
+                    v = self.strategy.encode_value(v)
+
+                before = new_value[:g]
+                after = new_value[h:]
+                new_value = ''.join((before, v, after))
+
+                i = len(before) + len(v)
+            else:
+                i += 1
+
+        return new_value, new_value != value

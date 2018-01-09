@@ -121,7 +121,10 @@ class TestLoading(unittest.TestCase):
 
             'DICT': {'1': 1, '2': [[1, 2]]},
             'OTHER_DICT': {'1': 1, '2': [[1, 2]]},
+
+            'NESTED': {'b': 1.1},
         }
+
         self.assertEqual(local_setting.default, 'default value')
         self.assertEqual(local_setting.value, 'local value')
         self.assertEqual(settings.INTERPOLATED.x, 'value')
