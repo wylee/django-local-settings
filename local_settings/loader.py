@@ -106,6 +106,7 @@ class Loader(Base):
         self._append_extras(settings, settings.pop('APPEND', None))
         self._swap_list_items(settings, settings.pop('SWAP', None))
         self._import_from_string(settings, settings.pop('IMPORT_FROM_STRING', None))
+        self._delete_settings(settings, settings.pop('DELETE', None))
 
         for local_setting, name in self.registry.items():
             local_setting.value = settings.get_dotted(name)
@@ -204,6 +205,11 @@ class Loader(Base):
             current_val = settings.get_dotted(name)
             if isinstance(current_val, string_types):
                 settings.set_dotted(name, import_string(current_val))
+
+    def _delete_settings(self, settings, names):
+        if names:
+            for name in names:
+                settings.pop_dotted(name)
 
     def _inject(self, value, settings):
         """Inject ``settings`` into ``value``.

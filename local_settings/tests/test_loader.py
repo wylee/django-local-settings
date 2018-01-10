@@ -132,6 +132,38 @@ class TestLoading(unittest.TestCase):
         self.assertEqual(settings.DEFAULT_ITEMS, expected['DEFAULT_ITEMS'])
         self.assertEqual(settings, expected)
 
+    def test_delete(self):
+        settings = self.loader.load({})
+        self.assertIn('LOCAL_SETTING', settings)
+
+        self.assertIn('A', settings)
+        self.assertIn('b', settings.A)
+        self.assertIn('c', settings.A.b)
+        self.assertIn('d', settings.A.b)
+
+        self.assertIn('LIST1', settings)
+        self.assertEqual(settings.LIST1, [1, 2])
+
+        settings = self.loader.load({
+            'DELETE': [
+                'LOCAL_SETTING',
+
+                # NOTE: LIST.1 = 'b'
+                'A.{{LIST.1}}.c',
+
+                'LIST1.0',
+            ],
+        })
+
+        self.assertNotIn('LOCAL_SETTING', settings)
+
+        self.assertIn('A', settings)
+        self.assertIn('b', settings.A)
+        self.assertNotIn('c', settings.A.b)
+        self.assertIn('d', settings.A.b)
+
+        self.assertEqual(settings.LIST1, [2])
+
 
 class TestLoadTypes(unittest.TestCase):
 
