@@ -225,16 +225,9 @@ class Loader(Base):
         if '{{' not in value:
             return value, False
 
-        new_value = value
-
-        begin = '{', '{'
-        end = '}', '}'
-
-        len_begin = len(begin)
-        len_end = len(end)
-
         i = 0
         stack = []
+        new_value = value
 
         while True:
             try:
@@ -247,18 +240,16 @@ class Loader(Base):
             except IndexError:
                 d = ' '
 
-            cd = c, d
-
-            if cd == begin:
+            if c == '{' and d == '{':
                 stack.append(i)
-                i += len_begin
-            elif cd == end:
+                i += 2
+            elif c == '}' and d == '}':
                 # g:h => {{name}}
                 g = stack.pop()
-                h = i + len_end
+                h = i + 2
 
                 # m:n => name
-                m = g + len_begin
+                m = g + 2
                 n = i
 
                 name = new_value[m:n]
@@ -277,5 +268,8 @@ class Loader(Base):
                 i = len(before) + len(v)
             else:
                 i += 1
+
+        if stack:
+            raise ValueError('Unclosed {{...}} in %s' % value)
 
         return new_value, new_value != value
