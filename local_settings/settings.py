@@ -1,8 +1,5 @@
 import re
 from collections import Mapping, Sequence
-from itertools import chain
-
-import six
 
 from .util import NO_DEFAULT, NO_DEFAULT as PLACEHOLDER
 
@@ -195,17 +192,13 @@ class DottedAccessMixin:
         if not path:
             raise ValueError('path cannot be empty')
 
-        convert_name = self._convert_name
-
-        path_iter = zip(iter(path), chain(path[1:], (None,)))
-
-        # NOTE: zip() returns a list on Python 2
-        path_iter = iter(path_iter) if six.PY2 else path_iter
-
+        i = 0
+        length = len(path)
         stack = []
         collector = []
         segments = []
         group = False
+        convert_name = self._convert_name
 
         def append_segment():
             segment = ''.join(collector)
@@ -214,37 +207,54 @@ class DottedAccessMixin:
             segments.append(segment)
             del collector[:]
 
-        for c, d in path_iter:
+        while i < length:
+            c = path[i]
+
+            try:
+                d = path[i + 1]
+            except IndexError:
+                d = ' '
+
             if c == '.' and not stack:
                 append_segment()
-                continue
-
-            group = False
-
-            if c == '(':
-                if stack and stack[-1] == '(':
-                    collector.append(c)
+                group = False
+            elif c == '(':
+                # Consume everything inside outer parentheses, including
+                # inner parentheses. We'll know we've reached the right
+                # outer paren when the stack is back to its height before
+                # entering the group.
+                stack_len = len(stack)
                 stack.append(c)
-            elif c == ')':
-                item = stack.pop()
-                if item != '(':
-                    raise ValueError('Unclosed (...) in %s' % path)
-                if stack and stack[-1] == '(':
-                    collector.append(c)
-                group = True
+                i += 1  # Skip outer left paren
+                while i < length:
+                    e = path[i]
+                    if e == '(':
+                        stack.append(e)
+                    elif e == ')':
+                        item = stack.pop()
+                        if item != '(':
+                            raise ValueError('Unclosed (...) in %s' % path)
+                        if len(stack) == stack_len:
+                            group = True
+                            break
+                    # Add char here so outer right paren isn't collected.
+                    collector.append(e)
+                    i += 1
             elif c == '{' and d == '{':
                 stack.append('{{')
                 collector.append('{{')
-                next(path_iter)
+                i += 1
             elif c == '}' and d == '}':
                 item = stack.pop()
                 if item != '{{':
                     raise ValueError('Unclosed {{...}} in %s' % path)
                 collector.append('}}')
-                next(path_iter)
                 group = True
+                i += 1
             else:
                 collector.append(c)
+
+            i += 1
 
         if stack:
             bracket = stack[-1]
