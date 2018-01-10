@@ -67,6 +67,10 @@ class DottedAccessMixin:
     def set_dotted(self, name, value, create_missing=True):
         self._traverse(name, create_missing=create_missing, value=value)
 
+    def pop_dotted(self, name, default=NO_DEFAULT):
+        action = lambda obj, segment: obj.pop(segment)
+        return self.get_dotted(name, default=default, action=action)
+
     def _traverse(self, name, create_missing=False, action=None, value=NO_DEFAULT):
         """Traverse to the item specified by ``name``.
 
