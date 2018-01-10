@@ -88,10 +88,7 @@ class DottedAccessMixin:
             if create_missing:
                 self._create_segment(obj, segment, next_segment)
 
-            try:
-                next_obj = obj[segment]
-            except IndexError:
-                raise KeyError(segment)
+            next_obj = obj[segment]
 
             if not last:
                 obj = next_obj
