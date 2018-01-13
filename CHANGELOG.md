@@ -1,5 +1,9 @@
 # Change Log for django-local-settings
 
+## 1.0.0 - unreleased
+
+In progress...
+
 ## 1.0b8 - 2018-01-13
 
 - Added a mechanism for deleting settings via the `DELETE` setting (a
