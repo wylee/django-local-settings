@@ -3,7 +3,6 @@ egg_name = django_local_settings
 egg_info = $(egg_name).egg-info
 package = local_settings
 sdist = dist/$(distribution)-$(version).tar.gz
-upload_path = hrimfaxi:/vol/www/cdn/pypi/dist
 venv = .env
 python_version ?= python3
 version = $(shell cat VERSION)
@@ -50,8 +49,6 @@ $(sdist): $(sources)
 clean-sdist:
 	rm -f $(sdist)
 
-upload: sdist
-	scp $(sdist) $(upload_path)
 upload-to-pypi:
 	python setup.py sdist upload
 
@@ -63,6 +60,5 @@ clean-pyc:
 	find . -name '*.py?' -type f -print0 | xargs -0 rm
 
 .PHONY = \
-    init reinit venv install reinstall test coverage sdist upload upload-to-pypi \
-    clean-venv clean-install clean-sdist \
-    clean clean-all clean-pyc
+    init reinit venv install reinstall test coverage sdist upload-to-pypi \
+    clean-venv clean-install clean-sdist clean clean-all clean-pyc
