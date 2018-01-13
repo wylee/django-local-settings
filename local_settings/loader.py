@@ -106,6 +106,7 @@ class Loader(Base):
         self._append_extras(settings, settings.pop('APPEND', None))
         self._swap_list_items(settings, settings.pop('SWAP', None))
         self._import_from_string(settings, settings.pop('IMPORT_FROM_STRING', None))
+        self._delete_settings(settings, settings.pop('DELETE', None))
 
         for local_setting, name in self.registry.items():
             local_setting.value = settings.get_dotted(name)
@@ -205,6 +206,11 @@ class Loader(Base):
             if isinstance(current_val, string_types):
                 settings.set_dotted(name, import_string(current_val))
 
+    def _delete_settings(self, settings, names):
+        if names:
+            for name in names:
+                settings.pop_dotted(name)
+
     def _inject(self, value, settings):
         """Inject ``settings`` into ``value``.
 
@@ -222,64 +228,54 @@ class Loader(Base):
         """
         assert isinstance(value, string_types), 'Expected str; got {0.__class__}'.format(value)
 
-        begin, end = '{{', '}}'
-
-        if begin not in value:
+        if '{{' not in value:
             return value, False
 
+        i = 0
+        stack = []
         new_value = value
-        begin_pos, end_pos = 0, None
-        len_begin, len_end = len(begin), len(end)
-        len_value = len(new_value)
 
-        while begin_pos < len_value:
-            # Find next {{.
-            begin_pos = new_value.find(begin, begin_pos)
-
-            if begin_pos == -1:
+        while True:
+            try:
+                c = new_value[i]
+            except IndexError:
                 break
 
-            # Save everything before {{.
-            before = new_value[:begin_pos]
-
-            # Find }} after {{.
-            begin_pos += len_begin
-            end_pos = new_value.find(end, begin_pos)
-            if end_pos == -1:
-                raise ValueError('Unmatched {begin}...{end} in {value}'.format(**locals()))
-
-            # Get name between {{ and }}, ignoring leading and trailing
-            # whitespace.
-            name = new_value[begin_pos:end_pos]
-            name = name.strip()
-
-            if not name:
-                raise ValueError('Empty name in {value}'.format(**locals()))
-
-            # Save everything after }}.
-            after_pos = end_pos + len_end
             try:
-                after = new_value[after_pos:]
+                d = new_value[i + 1]
             except IndexError:
-                # Reached end of value.
-                after = ''
+                d = ' '
 
-            # Retrieve string value for named setting (the "injection
-            # value").
-            try:
-                injection_value = settings.get_dotted(name)
-            except KeyError:
-                raise KeyError('{name} not found in {settings}'.format(**locals()))
+            if c == '{' and d == '{':
+                stack.append(i)
+                i += 2
+            elif c == '}' and d == '}':
+                # g:h => {{name}}
+                g = stack.pop()
+                h = i + 2
 
-            if not isinstance(injection_value, string_types):
-                injection_value = self.strategy.encode_value(injection_value)
+                # m:n => name
+                m = g + 2
+                n = i
 
-            # Combine before, inject value, and after to get the new
-            # value.
-            new_value = ''.join((before, injection_value, after))
+                name = new_value[m:n]
 
-            # Continue after injected value.
-            begin_pos = len(before) + len(injection_value)
-            len_value = len(new_value)
+                try:
+                    v = settings.get_dotted(name)
+                except KeyError:
+                    raise KeyError('{name} not found in {settings}'.format(**locals()))
+                if not isinstance(v, string_types):
+                    v = self.strategy.encode_value(v)
 
-        return new_value, (new_value != value)
+                before = new_value[:g]
+                after = new_value[h:]
+                new_value = ''.join((before, v, after))
+
+                i = len(before) + len(v)
+            else:
+                i += 1
+
+        if stack:
+            raise ValueError('Unclosed {{...}} in %s' % value)
+
+        return new_value, new_value != value

@@ -1,5 +1,22 @@
 # Change Log for django-local-settings
 
+## 1.0b8 - 2018-01-13
+
+- Added a mechanism for deleting settings via the `DELETE` setting (a
+  list containing dotted paths of settings to remove). This can be used
+  to remove settings that are common to most environments from a special
+  environment (such as testing).
+- Added `Settings.pop_dotted()` (this was actually added to
+  `DottedAccessMixin`, but it's normally used via `Settings`).
+- Updated settings path-parsing internals to use a stack.
+- Updated settings injection/interpolation logic to use a stack.
+- The previous two items enable nested interpolation in settings paths
+  and values (like `{{X.{{Y}}}}`).
+- When a member of a list-type setting isn't found, an `IndexError` will
+  now be raised. Previously, the `IndexError` would be caught and
+  a `KeyError` would be raised instead, but that's incosistent and could
+  be confusing.
+
 ## 1.0b7 - 2017-07-06
 
 - [#4] Fixed a bug with loading/interpolation of tuples (and other non-mutable

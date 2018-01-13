@@ -1,8 +1,5 @@
 import re
 from collections import Mapping, Sequence
-from itertools import chain
-
-import six
 
 from .util import NO_DEFAULT, NO_DEFAULT as PLACEHOLDER
 
@@ -59,9 +56,9 @@ class DottedAccessMixin:
             return False
         return True
 
-    def get_dotted(self, name, default=NO_DEFAULT):
+    def get_dotted(self, name, default=NO_DEFAULT, action=None):
         try:
-            return self._traverse(name)
+            return self._traverse(name, action=action)
         except KeyError:
             if default is NO_DEFAULT:
                 raise
@@ -69,6 +66,10 @@ class DottedAccessMixin:
 
     def set_dotted(self, name, value, create_missing=True):
         self._traverse(name, create_missing=create_missing, value=value)
+
+    def pop_dotted(self, name, default=NO_DEFAULT):
+        action = lambda obj, segment: obj.pop(segment)
+        return self.get_dotted(name, default=default, action=action)
 
     def _traverse(self, name, create_missing=False, action=None, value=NO_DEFAULT):
         """Traverse to the item specified by ``name``.
@@ -91,10 +92,7 @@ class DottedAccessMixin:
             if create_missing:
                 self._create_segment(obj, segment, next_segment)
 
-            try:
-                next_obj = obj[segment]
-            except IndexError:
-                raise KeyError(segment)
+            next_obj = obj[segment]
 
             if not last:
                 obj = next_obj
@@ -186,7 +184,7 @@ class DottedAccessMixin:
             >>> settings._parse_path('WORD.({{x.y.z}}XYZ)')
             ['WORD', '{{x.y.z}}XYZ']
 
-        Any segment that A) looks like an int and B) does *not* contain
+        Any segment that A) looks like an int and B) is *not* within
         a (...) or {{...}} group will be converted to an int. Segments
         that start with a leading "0" followed by other digits will not
         be converted.
@@ -195,55 +193,76 @@ class DottedAccessMixin:
         if not path:
             raise ValueError('path cannot be empty')
 
+        i = 0
+        length = len(path)
+        stack = []
+        collector = []
         segments = []
-        path_iter = zip(iter(path), chain(path[1:], (None,)))
-        if six.PY2:
-            # zip() returns a list on Python 2
-            path_iter = iter(path_iter)
+        group = False
         convert_name = self._convert_name
-        current_segment = []
-        current_segment_contains_group = False
 
         def append_segment():
-            segment = ''.join(current_segment)
-            if not current_segment_contains_group:
+            segment = ''.join(collector)
+            if not group:
                 segment = convert_name(segment)
             segments.append(segment)
-            del current_segment[:]
+            del collector[:]
 
-        for c, d in path_iter:
-            if c == '.':
+        while i < length:
+            c = path[i]
+
+            try:
+                d = path[i + 1]
+            except IndexError:
+                d = ' '
+
+            if c == '.' and not stack:
                 append_segment()
-                current_segment_contains_group = False
+                group = False
             elif c == '(':
-                nested = 0
-                for c, d in path_iter:
-                    current_segment.append(c)
-                    if c == '(':
-                        nested += 1
-                    elif c == ')':
-                        if nested:
-                            nested -= 1
-                        else:
-                            current_segment.pop()  # Remove the closing paren
-                            current_segment_contains_group = True
+                # Consume everything inside outer parentheses, including
+                # inner parentheses. We'll know we've reached the right
+                # outer paren when the stack is back to its height before
+                # entering the group.
+                stack_len = len(stack)
+                stack.append(c)
+                i += 1  # Skip outer left paren
+                while i < length:
+                    e = path[i]
+                    if e == '(':
+                        stack.append(e)
+                    elif e == ')':
+                        item = stack.pop()
+                        if item != '(':
+                            raise ValueError('Unclosed (...) in %s' % path)
+                        if len(stack) == stack_len:
+                            group = True
                             break
-                else:
-                    raise ValueError('Unclosed (...) in %s' % path)
+                    # Add char here so outer right paren isn't collected.
+                    collector.append(e)
+                    i += 1
             elif c == '{' and d == '{':
-                current_segment_contains_group = True
-                current_segment.append(c)
-                for c, d in path_iter:
-                    current_segment.append(c)
-                    if c == '}' and d == '}':
-                        current_segment_contains_group = True
-                        break
-                else:
+                stack.append('{{')
+                collector.append('{{')
+                i += 1
+            elif c == '}' and d == '}':
+                item = stack.pop()
+                if item != '{{':
                     raise ValueError('Unclosed {{...}} in %s' % path)
+                collector.append('}}')
+                group = True
+                i += 1
             else:
-                current_segment.append(c)
+                collector.append(c)
 
-        if current_segment:
+            i += 1
+
+        if stack:
+            bracket = stack[-1]
+            close_bracket = ')' if bracket == '(' else '}}'
+            raise ValueError('Unclosed %s...%s in %s' % (bracket, close_bracket, path))
+
+        if collector:
             append_segment()
 
         return segments
