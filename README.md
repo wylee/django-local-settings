@@ -62,7 +62,7 @@ Once the local settings are defined, *any missing settings will be prompted for 
         DATABASES = {
             'default': {
                 'ENGINE': 'django.db.backends.postgresql',
-                'NAME': LocalSetting(default='{{PACKAGE}}'),
+                'NAME': LocalSetting(default='{{ PACKAGE }}'),
                 'USER': LocalSetting(''),
                 'PASSWORD': SecretSetting(),
                 'HOST': LocalSetting(''),

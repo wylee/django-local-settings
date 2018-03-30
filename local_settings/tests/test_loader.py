@@ -20,7 +20,7 @@ class TestLoading(unittest.TestCase):
         self.assertEqual(local_setting.value, 'default value')
 
         settings = self.loader.load({
-            'BASE_SETTING': '{{PACKAGE}}',
+            'BASE_SETTING': '{{ PACKAGE }}',
             'LOCAL_SETTING': local_setting,
             'TUPLE_SETTING': ('a', 'b', 'c'),
             'LIST_SETTING': ['a', 'b', 'c'],
@@ -149,7 +149,7 @@ class TestLoading(unittest.TestCase):
                 'LOCAL_SETTING',
 
                 # NOTE: LIST.1 = 'b'
-                'A.{{LIST.1}}.c',
+                'A.{{ LIST.1 }}.c',
 
                 'LIST1.0',
             ],

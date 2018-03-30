@@ -214,8 +214,9 @@ class Loader(Base):
     def _inject(self, value, settings):
         """Inject ``settings`` into ``value``.
 
-        Go through ``value`` looking for ``{{NAME}}`` groups and replace
-        each group with the value of the named item from ``settings``.
+        Go through ``value`` looking for ``{{ NAME }}`` groups and
+        replace each group with the value of the named item from
+        ``settings``.
 
         Args:
             value (str): The value to inject settings into
@@ -250,7 +251,7 @@ class Loader(Base):
                 stack.append(i)
                 i += 2
             elif c == '}' and d == '}':
-                # g:h => {{name}}
+                # g:h => {{ name }}
                 g = stack.pop()
                 h = i + 2
 
@@ -277,6 +278,6 @@ class Loader(Base):
                 i += 1
 
         if stack:
-            raise ValueError('Unclosed {{...}} in %s' % value)
+            raise ValueError('Unclosed {{ ... }} in %s' % value)
 
         return new_value, new_value != value
