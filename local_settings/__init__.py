@@ -6,7 +6,6 @@ import sys
 from .color_printer import color_printer as printer
 from .exc import SettingsFileDidNotPassCheck
 from .loader import Loader
-from .strategy import INIJSONStrategy
 from .util import get_file_name
 
 # Exported (but unused locally)
@@ -20,8 +19,7 @@ from .__main__ import make_local_settings  # noqa: exported
 
 
 def load_and_check_settings(base_settings, file_name=None, section=None, base_path=None,
-                            strategy_type=INIJSONStrategy, disable=None, prompt=None,
-                            quiet=None):
+                            strategy_type=None, disable=None, prompt=None, quiet=None):
     """Merge local settings from file with base settings, then check.
 
     Returns a new dict containing the base settings and the loaded

@@ -1,5 +1,6 @@
 import io
 import os
+import pkg_resources
 
 
 NO_DEFAULT = type('NO_DEFAULT', (), {
@@ -43,6 +44,53 @@ def get_default_file_names():
     """Get default file names for all loading strategies, sorted."""
     from .strategy import get_file_type_map  # noqa: Avoid circular import
     return sorted('local.{ext}'.format(ext=ext) for ext in get_file_type_map())
+
+
+def parse_file_name_and_section(file_name, section=None, extender=None, extender_section=None):
+    """Parse file name and (maybe) section.
+
+    File names can be absolute paths, relative paths, or asset
+    specs::
+
+        /home/user/project/local.cfg
+        local.cfg
+        some.package:local.cfg
+
+    File names can also include a section::
+
+        some.package:local.cfg#dev
+
+    If a ``section`` is passed, it will take precedence over a
+    section parsed out of the file name.
+
+    """
+    if '#' in file_name:
+        file_name, parsed_section = file_name.rsplit('#', 1)
+    else:
+        parsed_section = None
+
+    if ':' in file_name:
+        package, path = file_name.split(':', 1)
+        file_name = pkg_resources.resource_filename(package, path)
+
+    if extender:
+        if not file_name:
+            # Extended another section in the same file
+            file_name = extender
+        elif not os.path.isabs(file_name):
+            # Extended by another file in the same directory
+            file_name = os.path.join(os.path.dirname(extender), file_name)
+
+    if section:
+        pass
+    elif parsed_section:
+        section = parsed_section
+    elif extender_section:
+        section = extender_section
+    else:
+        section = None
+
+    return file_name, section
 
 
 # These TTY functions were copied from Invoke

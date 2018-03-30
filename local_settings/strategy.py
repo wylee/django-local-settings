@@ -2,7 +2,6 @@
 import logging
 import json
 import os
-import pkg_resources
 from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
 from configparser import NoSectionError, RawConfigParser
@@ -10,6 +9,7 @@ from configparser import NoSectionError, RawConfigParser
 from six import raise_from, with_metaclass
 
 from .exc import SettingsFileNotFoundError, SettingsFileSectionNotFoundError
+from .util import parse_file_name_and_section
 
 
 __all__ = [
@@ -38,47 +38,16 @@ class Strategy(with_metaclass(ABCMeta)):
                                     extender_section=None):
         """Parse file name and (maybe) section.
 
-        File names can be absolute paths, relative paths, or asset
-        specs::
-
-            /home/user/project/local.cfg
-            local.cfg
-            some.package:local.cfg
-
-        File names can also include a section::
-
-            some.package:local.cfg#dev
-
-        If a ``section`` is passed, it will take precedence over a
-        section parsed out of the file name.
+        Delegates to :func:`.util.parse_file_name_and_section` to parse
+        the file name and section. If that function doesn't find a
+        section, this method should return the default section for the
+        strategy via :meth:`get_default_section` (if applicable).
 
         """
-        if '#' in file_name:
-            file_name, parsed_section = file_name.rsplit('#', 1)
-        else:
-            parsed_section = None
-
-        if ':' in file_name:
-            package, path = file_name.split(':', 1)
-            file_name = pkg_resources.resource_filename(package, path)
-
-        if extender:
-            if not file_name:
-                # Extended another section in the same file
-                file_name = extender
-            elif not os.path.isabs(file_name):
-                # Extended by another file in the same directory
-                file_name = os.path.join(os.path.dirname(extender), file_name)
-
-        if section:
-            pass
-        elif parsed_section:
-            section = parsed_section
-        elif extender_section:
-            section = extender_section
-        else:
+        file_name, section = parse_file_name_and_section(
+            file_name, section, extender, extender_section)
+        if section is None:
             section = self.get_default_section(file_name)
-
         return file_name, section
 
     def get_default_section(self, file_name):
