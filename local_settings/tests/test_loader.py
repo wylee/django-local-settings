@@ -130,7 +130,20 @@ class TestLoading(unittest.TestCase):
         self.assertEqual(settings.INTERPOLATED.x, 'value')
         self.assertEqual(settings.get_dotted('INTERPOLATED.x'), 'value')
         self.assertEqual(settings.DEFAULT_ITEMS, expected['DEFAULT_ITEMS'])
-        self.assertEqual(settings, expected)
+
+        def check_item(k):
+            self.assertIn(k, settings)
+            value, expected_value = settings[k], expected[k]
+            self.assertIsInstance(value, type(expected_value))
+            self.assertEqual(value, expected_value)
+
+        if hasattr(self, 'subTest'):  # Python 3.4+
+            for key in expected:
+                with self.subTest(key=key):
+                    check_item(key)
+        else:
+            for key in expected:
+                check_item(key)
 
     def test_delete(self):
         settings = self.loader.load({})
