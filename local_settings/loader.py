@@ -113,44 +113,44 @@ class Loader(Base):
     # Post-processing
 
     def _interpolate_values(self, obj, settings):
-        all_interpolated = []
-        interpolated = []
-        while interpolated is not None:
-            all_interpolated.extend(interpolated)
-            obj, interpolated = self._interpolate_values_inner(obj, settings)
-        return obj, all_interpolated
-
-    def _interpolate_values_inner(self, obj, settings, _interpolated=None):
-        if _interpolated is None:
-            _interpolated = []
-
-        if isinstance(obj, string_types):
-            new_value, changed = self._inject(obj, settings)
+        def inject(value):
+            new_value, changed = self._inject(value, settings)
             if changed:
-                _interpolated.append((obj, new_value))
-                obj = new_value
+                interpolated.append((value, new_value))
+            return new_value
+
+        while True:
+            interpolated = []
+            obj = self._traverse_object(obj, action=inject)
+            if not interpolated:
+                break
+
+        return obj
+
+    def _traverse_object(self, obj, action):
+        if isinstance(obj, string_types):
+            obj = action(obj)
         elif isinstance(obj, MutableMapping):
             for k, v in obj.items():
-                v, _interpolated = self._interpolate_values_inner(v, settings, _interpolated)
+                v = self._traverse_object(v, action)
                 obj[k] = v
         elif isinstance(obj, Mapping):
             items = []
             for k, v in obj.items():
-                v, _interpolated = self._interpolate_values_inner(v, settings, _interpolated)
+                v = self._traverse_object(v, action)
                 items.append((k, v))
             obj = obj.__class__(items)
         elif isinstance(obj, MutableSequence):
             for i, v in enumerate(obj):
-                v, _interpolated = self._interpolate_values_inner(v, settings, _interpolated)
+                v = self._traverse_object(v, action)
                 obj[i] = v
         elif isinstance(obj, Sequence):
             items = []
             for v in obj:
-                v, _interpolated = self._interpolate_values_inner(v, settings, _interpolated)
+                v = self._traverse_object(v, action)
                 items.append(v)
             obj = obj.__class__(items)
-
-        return obj, _interpolated or None
+        return obj
 
     def _interpolate_keys(self, obj, settings):
         if isinstance(obj, Mapping):
