@@ -7,6 +7,7 @@ from six import string_types
 from .base import Base
 from .checker import Checker
 from .settings import DottedAccessDict, Settings
+from .strategy import RawValue
 from .types import LocalSetting
 
 
@@ -55,24 +56,12 @@ class Loader(Base):
         # The fully resolved settings.
         settings = Settings(base_settings)
 
-        settings_names = []
-        settings_not_decoded = set()
-
         for name, value in settings_from_file.items():
             for prefix in ('PREPEND.', 'APPEND.', 'SWAP.'):
                 if name.startswith(prefix):
                     name = name[len(prefix):]
                     name = '{prefix}({name})'.format_map(locals())
                     break
-
-            settings_names.append(name)
-
-            # Attempt to decode raw values. Errors in decoding at this
-            # stage are ignored.
-            try:
-                value = self.strategy.decode_value(value)
-            except ValueError:
-                settings_not_decoded.add(name)
 
             settings.set_dotted(name, value)
 
@@ -84,21 +73,8 @@ class Loader(Base):
             if isinstance(current_value, LocalSetting):
                 self.registry[current_value] = name
 
-        # Interpolate values of settings read from file. When a setting
-        # that couldn't be decoded previously is encountered, its post-
-        # interpolation value will be decoded.
-        for name in settings_names:
-            value = settings.get_dotted(name)
-            value, _ = self._interpolate_values(value, settings)
-            if name in settings_not_decoded:
-                value = self.strategy.decode_value(value)
-            settings.set_dotted(name, value)
-
-        # Interpolate base settings.
         self._interpolate_values(settings, settings)
-
         self._interpolate_keys(settings, settings)
-
         self._prepend_extras(settings, settings.pop('PREPEND', None))
         self._append_extras(settings, settings.pop('APPEND', None))
         self._swap_list_items(settings, settings.pop('SWAP', None))
@@ -116,6 +92,8 @@ class Loader(Base):
         def inject(value):
             new_value, changed = self._inject(value, settings)
             if changed:
+                if isinstance(value, RawValue):
+                    new_value = RawValue(new_value)
                 interpolated.append((value, new_value))
             return new_value
 
@@ -125,7 +103,12 @@ class Loader(Base):
             if not interpolated:
                 break
 
-        return obj
+        def decode(value):
+            if isinstance(value, RawValue):
+                value = self.strategy.decode_value(value)
+            return value
+
+        return self._traverse_object(obj, action=decode)
 
     def _traverse_object(self, obj, action):
         if isinstance(obj, string_types):
@@ -271,6 +254,7 @@ class Loader(Base):
                     v = settings.get_dotted(name)
                 except KeyError:
                     raise KeyError('{name} not found in {settings}'.format_map(locals()))
+
                 if not isinstance(v, string_types):
                     v = self.strategy.encode_value(v)
 

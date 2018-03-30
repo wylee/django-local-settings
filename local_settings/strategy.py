@@ -6,7 +6,7 @@ from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
 from configparser import NoSectionError, RawConfigParser
 
-from six import raise_from, with_metaclass
+from six import raise_from, text_type, with_metaclass
 
 from .exc import SettingsFileNotFoundError, SettingsFileSectionNotFoundError
 from .util import parse_file_name_and_section
@@ -20,6 +20,11 @@ __all__ = [
 
 
 log = logging.getLogger(__name__)
+
+
+class RawValue(text_type):
+
+    """Marker for values that couldn't be decoded when reading."""
 
 
 class Strategy(with_metaclass(ABCMeta)):
@@ -134,7 +139,14 @@ class INIStrategy(Strategy):
             items = parser.defaults()
             section_present = False
         items = OrderedDict(items)
-        return items, section_present
+        decoded_items = OrderedDict()
+        for k, v in items.items():
+            try:
+                v = self.decode_value(v)
+            except ValueError:
+                v = RawValue(v)
+            decoded_items[k] = v
+        return decoded_items, section_present
 
     def write_settings(self, settings, file_name, section):
         file_name, section = self.parse_file_name_and_section(file_name, section)
@@ -180,7 +192,7 @@ class INIJSONStrategy(INIStrategy):
     def decode_value(self, value):
         value = value.strip()
         if not value:
-            return ''
+            return None
         try:
             value = json.loads(value)
         except ValueError:
