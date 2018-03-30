@@ -1,4 +1,4 @@
-from collections import Mapping, MutableSequence, Sequence
+from collections import Mapping, MutableMapping, MutableSequence, Sequence
 
 from django.utils.module_loading import import_string
 
@@ -130,17 +130,25 @@ class Loader(Base):
             if changed:
                 _interpolated.append((obj, new_value))
                 obj = new_value
-        elif isinstance(obj, Mapping):
+        elif isinstance(obj, MutableMapping):
             for k, v in obj.items():
-                obj[k], _interpolated = self._interpolate_values_inner(v, settings, _interpolated)
+                v, _interpolated = self._interpolate_values_inner(v, settings, _interpolated)
+                obj[k] = v
+        elif isinstance(obj, Mapping):
+            items = []
+            for k, v in obj.items():
+                v, _interpolated = self._interpolate_values_inner(v, settings, _interpolated)
+                items.append((k, v))
+            obj = obj.__class__(items)
         elif isinstance(obj, MutableSequence):
             for i, v in enumerate(obj):
-                obj[i], _interpolated = self._interpolate_values_inner(v, settings, _interpolated)
+                v, _interpolated = self._interpolate_values_inner(v, settings, _interpolated)
+                obj[i] = v
         elif isinstance(obj, Sequence):
             items = []
             for v in obj:
-                item, _interpolated = self._interpolate_values_inner(v, settings, _interpolated)
-                items.append(item)
+                v, _interpolated = self._interpolate_values_inner(v, settings, _interpolated)
+                items.append(v)
             obj = obj.__class__(items)
 
         return obj, _interpolated or None
