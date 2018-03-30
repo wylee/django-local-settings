@@ -207,18 +207,23 @@ class INIJSONStrategy(INIStrategy):
 
 
 def get_strategy_types():
-    """Get a list of all :class:`Strategy` subclasses."""
+    """Get a list of all :class:`Strategy` subclasses.
+
+    The list will be ordered by file type extension.
+
+    """
     def get_subtypes(type_):
         subtypes = type_.__subclasses__()
         for subtype in subtypes:
             subtypes.extend(get_subtypes(subtype))
         return subtypes
-    return get_subtypes(Strategy)
+    sub_types = get_subtypes(Strategy)
+    return sorted(sub_types, key=lambda t: t.file_types[0])
 
 
 def get_file_type_map():
     """Map file types (extensions) to strategy types."""
-    file_type_map = {}
+    file_type_map = OrderedDict()
     for strategy_type in get_strategy_types():
         for ext in strategy_type.file_types:
             if ext in file_type_map:
