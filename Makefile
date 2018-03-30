@@ -5,7 +5,7 @@ package = local_settings
 sdist = dist/$(distribution)-$(version).tar.gz
 venv = .env
 python_version ?= python3
-version = $(shell cat VERSION)
+version = $(shell sed -n "s/__version__ = '\(..*\)'/\1/p" local_settings/__init__.py)
 
 sources = $(shell find . \
     -not -path '.'    \

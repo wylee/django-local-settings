@@ -14,8 +14,10 @@ if py_version_dotted not in supported_py_versions:
     sys.stderr.write('\n')
 
 
-with open('VERSION') as version_fp:
-    VERSION = version_fp.read().strip()
+with open('local_settings/__init__.py') as fp:
+    for line in fp:
+        if line.startswith('__version__'):
+            __version__ = line.split('=')[1].strip()[1:-1]
 
 
 with open('README.md') as readme_fp:
@@ -43,7 +45,7 @@ else:
 
 setup(
     name='django-local-settings',
-    version=VERSION,
+    version=__version__,
     author='Wyatt Baldwin',
     author_email='self@wyattbaldwin.com',
     url='https://github.com/wylee/django-local-settings',
