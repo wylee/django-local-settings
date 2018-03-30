@@ -259,6 +259,7 @@ class Loader(Base):
                 n = i
 
                 name = new_value[m:n]
+                name = name.strip()
 
                 try:
                     v = settings.get_dotted(name)
