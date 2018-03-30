@@ -27,8 +27,17 @@ class Strategy(with_metaclass(ABCMeta)):
     file_types = ()
 
     @abstractmethod
-    def read_file(self, file_name, section=None):
-        """Read settings from file."""
+    def read_section(self, file_name, section=None):
+        """Read settings from specified ``section`` of config file.
+
+        This is where the strategy-specific file-reading logic goes.
+
+        Returns:
+            - Settings from the specified section or from the default
+              section if the specified section isn't present.
+            - Whether the section is present.
+
+        """
 
     @abstractmethod
     def write_settings(self, settings, file_name, section=None):
@@ -49,6 +58,36 @@ class Strategy(with_metaclass(ABCMeta)):
         if section is None:
             section = self.get_default_section(file_name)
         return file_name, section
+
+    def read_file(self, file_name, section=None, finalize=True):
+        """Read settings from config file."""
+        file_name, section = self.parse_file_name_and_section(file_name, section)
+
+        if not os.path.isfile(file_name):
+            raise SettingsFileNotFoundError(file_name)
+
+        section_dict, section_present = self.read_section(file_name, section)
+
+        settings = OrderedDict()
+
+        if 'extends' in section_dict:
+            extends = section_dict['extends']
+            del section_dict['extends']
+            if extends:
+                extends, extends_section = self.parse_file_name_and_section(
+                    extends, extender=file_name, extender_section=section)
+                extended_settings, extended_section_present = self.read_file(
+                    extends, extends_section, finalize=False)
+                section_present = section_present or extended_section_present
+                settings.update(extended_settings)
+
+        settings.update(section_dict)
+
+        if finalize:
+            if not section_present:
+                raise SettingsFileSectionNotFoundError(section)
+
+        return settings, section_present
 
     def get_default_section(self, file_name):
         return None
@@ -84,41 +123,18 @@ class INIStrategy(Strategy):
 
     file_types = ('ini',)
 
-    def __init__(self):
-        super(INIStrategy, self).__init__()
-        self.section_found_while_reading = False
-
-    def read_file(self, file_name, section=None):
-        """Read settings from specified ``section`` of config file."""
-        file_name, section = self.parse_file_name_and_section(file_name, section)
-        if not os.path.isfile(file_name):
-            raise SettingsFileNotFoundError(file_name)
+    def read_section(self, file_name, section):
         parser = self.make_parser()
         with open(file_name) as fp:
             parser.read_file(fp)
-
-        settings = OrderedDict()
-
         if parser.has_section(section):
-            section_dict = parser[section]
-            self.section_found_while_reading = True
+            items = parser[section]
+            section_present = True
         else:
-            section_dict = parser.defaults().copy()
-
-        extends = section_dict.get('extends')
-
-        if extends:
-            extends = self.decode_value(extends)
-            extends, extends_section = self.parse_file_name_and_section(
-                extends, extender=file_name, extender_section=section)
-            settings.update(self.read_file(extends, extends_section))
-
-        settings.update(section_dict)
-
-        if not self.section_found_while_reading:
-            raise SettingsFileSectionNotFoundError(section)
-
-        return settings
+            items = parser.defaults()
+            section_present = False
+        items = OrderedDict(items)
+        return items, section_present
 
     def write_settings(self, settings, file_name, section):
         file_name, section = self.parse_file_name_and_section(file_name, section)

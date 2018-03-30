@@ -50,8 +50,7 @@ class Loader(Base):
         base_settings = DottedAccessDict((k, base_settings[k]) for k in valid_keys)
 
         # Settings read from the settings file; values are unprocessed.
-        settings_from_file = self.strategy.read_file(self.file_name, self.section)
-        settings_from_file.pop('extends', None)
+        settings_from_file, _ = self.strategy.read_file(self.file_name, self.section)
 
         # The fully resolved settings.
         settings = Settings(base_settings)
