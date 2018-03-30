@@ -10,6 +10,7 @@ class TestUtil(unittest.TestCase):
         self.assertFalse(NO_DEFAULT)
 
     def test_default_file_name(self):
+        os.chdir(os.path.dirname(__file__))
         os.environ.pop('LOCAL_SETTINGS_FILE', None)
         file_name = get_file_name()
         self.assertEqual(os.path.basename(file_name), 'local.cfg')

@@ -15,6 +15,7 @@ from .exc import SettingsFileNotFoundError  # noqa: exported
 from .settings import Settings  # noqa: exported
 from .types import LocalSetting, SecretSetting  # noqa: exported
 from .util import NO_DEFAULT  # noqa: exported
+from .util import get_default_file_names
 from .__main__ import make_local_settings  # noqa: exported
 
 
@@ -41,7 +42,7 @@ def load_and_check_settings(base_settings, file_name=None, section=None, base_pa
 
     If a file name isn't passed: if the ``LOCAL_SETTINGS_FILE_NAME``
     environment variable is set, the specified file will be used;
-    otherwise ``{base_path}/local.cfg`` will be used.
+    otherwise ``{base_path}/local.{ext}`` will be used.
 
     ``base_path`` is used when ``file_name`` is relative; if it's not
     passed, it will be set to the current working directory.
@@ -69,6 +70,13 @@ def load_and_check_settings(base_settings, file_name=None, section=None, base_pa
         return {}
     if file_name is None:
         file_name = get_file_name()
+    if file_name is None:
+        cwd = os.getcwd()
+        default_file_names = ', '.join(get_default_file_names())
+        raise SettingsFileNotFoundError(
+            'No local settings file was specified and no default settings file was found in the '
+            'current working directory (cwd = {cwd}, defaults = {default_file_names})'
+            .format_map(locals()))
     if ':' in file_name:
         package, path = file_name.split(':', 1)
         file_name = pkg_resources.resource_filename(package, path)
