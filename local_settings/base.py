@@ -13,7 +13,7 @@ class Base(object):
             if strategy_type is None:
                 raise StrategyError(
                     'No strategy type was specified and no strategy corresponds to the specified '
-                    'settings file: {original_file_name}'.format_map(locals()))
+                    'settings file: {original_file_name}'.format(**locals()))
         self.original_file_name = original_file_name
         self.file_name = file_name
         self.section = section

@@ -77,7 +77,7 @@ def load_and_check_settings(base_settings, file_name=None, section=None, base_pa
         raise SettingsFileNotFoundError(
             'No local settings file was specified and no default settings file was found in the '
             'current working directory (cwd = {cwd}, defaults = {default_file_names})'
-            .format_map(locals()))
+            .format(**locals()))
     if ':' in file_name:
         package, path = file_name.split(':', 1)
         file_name = pkg_resources.resource_filename(package, path)

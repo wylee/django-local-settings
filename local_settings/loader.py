@@ -60,7 +60,7 @@ class Loader(Base):
             for prefix in ('PREPEND.', 'APPEND.', 'SWAP.'):
                 if name.startswith(prefix):
                     name = name[len(prefix):]
-                    name = '{prefix}({name})'.format_map(locals())
+                    name = '{prefix}({name})'.format(**locals())
                     break
 
             settings.set_dotted(name, value)
@@ -253,7 +253,7 @@ class Loader(Base):
                 try:
                     v = settings.get_dotted(name)
                 except KeyError:
-                    raise KeyError('{name} not found in {settings}'.format_map(locals()))
+                    raise KeyError('{name} not found in {settings}'.format(**locals()))
 
                 if not isinstance(v, string_types):
                     v = self.strategy.encode_value(v)
