@@ -133,9 +133,7 @@ class TestLoading(unittest.TestCase):
 
         def check_item(k):
             self.assertIn(k, settings)
-            value, expected_value = settings[k], expected[k]
-            self.assertIsInstance(value, type(expected_value))
-            self.assertEqual(value, expected_value)
+            self.assertEqual(settings[k], expected[k])
 
         if hasattr(self, 'subTest'):  # Python 3.4+
             for key in expected:
