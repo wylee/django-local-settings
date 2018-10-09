@@ -1,5 +1,9 @@
 # Change Log for django-local-settings
 
+## 1.0.0 - unreleased
+
+In progress...
+
 ## 1.0b9 - 2018-10-08
 
 - Added support for Python 3.7.
@@ -16,7 +20,6 @@
 - Mutable vs. non-mutable mappings are now handled separately when
   interpolating.
 - Simplified internals of loader, esp. wrt. decoding values & interpolation.
-
 
 ## 1.0b8 - 2018-01-13
 
