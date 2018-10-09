@@ -171,21 +171,21 @@ class DottedAccessMixin:
         inside parentheses)::
 
             >>> settings = Settings()
-            >>> settings._parse_path('WORD.{{x}}')
-            ['WORD', '{{x}}']
-            >>> settings._parse_path('WORD.{{x.y}}')
-            ['WORD', '{{x.y}}']
-            >>> settings._parse_path('WORD.{{x.y.z}}XYZ')
-            ['WORD', '{{x.y.z}}XYZ']
+            >>> settings._parse_path('WORD.{{ x }}')
+            ['WORD', '{{ x }}']
+            >>> settings._parse_path('WORD.{{ x.y }}')
+            ['WORD', '{{ x.y }}']
+            >>> settings._parse_path('WORD.{{ x.y.z }}XYZ')
+            ['WORD', '{{ x.y.z }}XYZ']
 
         Interpolation groups *can* be wrapped in parentheses, but doing
         so is redundant::
 
-            >>> settings._parse_path('WORD.({{x.y.z}}XYZ)')
-            ['WORD', '{{x.y.z}}XYZ']
+            >>> settings._parse_path('WORD.({{ x.y.z }}XYZ)')
+            ['WORD', '{{ x.y.z }}XYZ']
 
         Any segment that A) looks like an int and B) is *not* within
-        a (...) or {{...}} group will be converted to an int. Segments
+        a (...) or {{ ... }} group will be converted to an int. Segments
         that start with a leading "0" followed by other digits will not
         be converted.
 
@@ -248,7 +248,7 @@ class DottedAccessMixin:
             elif c == '}' and d == '}':
                 item = stack.pop()
                 if item != '{{':
-                    raise ValueError('Unclosed {{...}} in %s' % path)
+                    raise ValueError('Unclosed {{ ... }} in %s' % path)
                 collector.append('}}')
                 group = True
                 i += 1

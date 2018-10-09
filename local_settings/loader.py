@@ -1,4 +1,4 @@
-from collections import Mapping, MutableSequence, Sequence
+from collections import Mapping, MutableMapping, MutableSequence, Sequence
 
 from django.utils.module_loading import import_string
 
@@ -7,14 +7,13 @@ from six import string_types
 from .base import Base
 from .checker import Checker
 from .settings import DottedAccessDict, Settings
+from .strategy import RawValue
 from .types import LocalSetting
-
-from .strategy import INIJSONStrategy
 
 
 class Loader(Base):
 
-    def __init__(self, file_name, section=None, registry=None, strategy_type=INIJSONStrategy):
+    def __init__(self, file_name, section=None, registry=None, strategy_type=None):
         super(Loader, self).__init__(file_name, section, registry, strategy_type)
 
     def load_and_check(self, base_settings, prompt=None):
@@ -52,14 +51,10 @@ class Loader(Base):
         base_settings = DottedAccessDict((k, base_settings[k]) for k in valid_keys)
 
         # Settings read from the settings file; values are unprocessed.
-        settings_from_file = self.strategy.read_file(self.file_name, self.section)
-        settings_from_file.pop('extends', None)
+        settings_from_file, _ = self.strategy.read_file(self.file_name, self.section)
 
         # The fully resolved settings.
         settings = Settings(base_settings)
-
-        settings_names = []
-        settings_not_decoded = set()
 
         for name, value in settings_from_file.items():
             for prefix in ('PREPEND.', 'APPEND.', 'SWAP.'):
@@ -67,15 +62,6 @@ class Loader(Base):
                     name = name[len(prefix):]
                     name = '{prefix}({name})'.format(**locals())
                     break
-
-            settings_names.append(name)
-
-            # Attempt to decode raw values. Errors in decoding at this
-            # stage are ignored.
-            try:
-                value = self.strategy.decode_value(value)
-            except ValueError:
-                settings_not_decoded.add(name)
 
             settings.set_dotted(name, value)
 
@@ -87,21 +73,8 @@ class Loader(Base):
             if isinstance(current_value, LocalSetting):
                 self.registry[current_value] = name
 
-        # Interpolate values of settings read from file. When a setting
-        # that couldn't be decoded previously is encountered, its post-
-        # interpolation value will be decoded.
-        for name in settings_names:
-            value = settings.get_dotted(name)
-            value, _ = self._interpolate_values(value, settings)
-            if name in settings_not_decoded:
-                value = self.strategy.decode_value(value)
-            settings.set_dotted(name, value)
-
-        # Interpolate base settings.
         self._interpolate_values(settings, settings)
-
         self._interpolate_keys(settings, settings)
-
         self._prepend_extras(settings, settings.pop('PREPEND', None))
         self._append_extras(settings, settings.pop('APPEND', None))
         self._swap_list_items(settings, settings.pop('SWAP', None))
@@ -116,36 +89,51 @@ class Loader(Base):
     # Post-processing
 
     def _interpolate_values(self, obj, settings):
-        all_interpolated = []
-        interpolated = []
-        while interpolated is not None:
-            all_interpolated.extend(interpolated)
-            obj, interpolated = self._interpolate_values_inner(obj, settings)
-        return obj, all_interpolated
-
-    def _interpolate_values_inner(self, obj, settings, _interpolated=None):
-        if _interpolated is None:
-            _interpolated = []
-
-        if isinstance(obj, string_types):
-            new_value, changed = self._inject(obj, settings)
+        def inject(value):
+            new_value, changed = self._inject(value, settings)
             if changed:
-                _interpolated.append((obj, new_value))
-                obj = new_value
-        elif isinstance(obj, Mapping):
+                if isinstance(value, RawValue):
+                    new_value = RawValue(new_value)
+                interpolated.append((value, new_value))
+            return new_value
+
+        while True:
+            interpolated = []
+            obj = self._traverse_object(obj, action=inject)
+            if not interpolated:
+                break
+
+        def decode(value):
+            if isinstance(value, RawValue):
+                value = self.strategy.decode_value(value)
+            return value
+
+        return self._traverse_object(obj, action=decode)
+
+    def _traverse_object(self, obj, action):
+        if isinstance(obj, string_types):
+            obj = action(obj)
+        elif isinstance(obj, MutableMapping):
             for k, v in obj.items():
-                obj[k], _interpolated = self._interpolate_values_inner(v, settings, _interpolated)
+                v = self._traverse_object(v, action)
+                obj[k] = v
+        elif isinstance(obj, Mapping):
+            items = []
+            for k, v in obj.items():
+                v = self._traverse_object(v, action)
+                items.append((k, v))
+            obj = obj.__class__(items)
         elif isinstance(obj, MutableSequence):
             for i, v in enumerate(obj):
-                obj[i], _interpolated = self._interpolate_values_inner(v, settings, _interpolated)
+                v = self._traverse_object(v, action)
+                obj[i] = v
         elif isinstance(obj, Sequence):
             items = []
             for v in obj:
-                item, _interpolated = self._interpolate_values_inner(v, settings, _interpolated)
-                items.append(item)
+                v = self._traverse_object(v, action)
+                items.append(v)
             obj = obj.__class__(items)
-
-        return obj, _interpolated or None
+        return obj
 
     def _interpolate_keys(self, obj, settings):
         if isinstance(obj, Mapping):
@@ -214,8 +202,9 @@ class Loader(Base):
     def _inject(self, value, settings):
         """Inject ``settings`` into ``value``.
 
-        Go through ``value`` looking for ``{{NAME}}`` groups and replace
-        each group with the value of the named item from ``settings``.
+        Go through ``value`` looking for ``{{ NAME }}`` groups and
+        replace each group with the value of the named item from
+        ``settings``.
 
         Args:
             value (str): The value to inject settings into
@@ -250,7 +239,7 @@ class Loader(Base):
                 stack.append(i)
                 i += 2
             elif c == '}' and d == '}':
-                # g:h => {{name}}
+                # g:h => {{ name }}
                 g = stack.pop()
                 h = i + 2
 
@@ -259,11 +248,13 @@ class Loader(Base):
                 n = i
 
                 name = new_value[m:n]
+                name = name.strip()
 
                 try:
                     v = settings.get_dotted(name)
                 except KeyError:
                     raise KeyError('{name} not found in {settings}'.format(**locals()))
+
                 if not isinstance(v, string_types):
                     v = self.strategy.encode_value(v)
 
@@ -276,6 +267,6 @@ class Loader(Base):
                 i += 1
 
         if stack:
-            raise ValueError('Unclosed {{...}} in %s' % value)
+            raise ValueError('Unclosed {{ ... }} in %s' % value)
 
         return new_value, new_value != value

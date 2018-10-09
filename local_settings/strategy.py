@@ -2,14 +2,14 @@
 import logging
 import json
 import os
-import pkg_resources
 from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
 from configparser import NoSectionError, RawConfigParser
 
-from six import raise_from, with_metaclass
+from six import raise_from, text_type, with_metaclass
 
 from .exc import SettingsFileNotFoundError, SettingsFileSectionNotFoundError
+from .util import parse_file_name_and_section
 
 
 __all__ = [
@@ -22,13 +22,27 @@ __all__ = [
 log = logging.getLogger(__name__)
 
 
+class RawValue(text_type):
+
+    """Marker for values that couldn't be decoded when reading."""
+
+
 class Strategy(with_metaclass(ABCMeta)):
 
     file_types = ()
 
     @abstractmethod
-    def read_file(self, file_name, section=None):
-        """Read settings from file."""
+    def read_section(self, file_name, section=None):
+        """Read settings from specified ``section`` of config file.
+
+        This is where the strategy-specific file-reading logic goes.
+
+        Returns:
+            - Settings from the specified section or from the default
+              section if the specified section isn't present.
+            - Whether the section is present.
+
+        """
 
     @abstractmethod
     def write_settings(self, settings, file_name, section=None):
@@ -38,48 +52,47 @@ class Strategy(with_metaclass(ABCMeta)):
                                     extender_section=None):
         """Parse file name and (maybe) section.
 
-        File names can be absolute paths, relative paths, or asset
-        specs::
-
-            /home/user/project/local.cfg
-            local.cfg
-            some.package:local.cfg
-
-        File names can also include a section::
-
-            some.package:local.cfg#dev
-
-        If a ``section`` is passed, it will take precedence over a
-        section parsed out of the file name.
+        Delegates to :func:`.util.parse_file_name_and_section` to parse
+        the file name and section. If that function doesn't find a
+        section, this method should return the default section for the
+        strategy via :meth:`get_default_section` (if applicable).
 
         """
-        if '#' in file_name:
-            file_name, parsed_section = file_name.rsplit('#', 1)
-        else:
-            parsed_section = None
-
-        if ':' in file_name:
-            package, path = file_name.split(':', 1)
-            file_name = pkg_resources.resource_filename(package, path)
-
-        if extender:
-            if not file_name:
-                # Extended another section in the same file
-                file_name = extender
-            elif not os.path.isabs(file_name):
-                # Extended by another file in the same directory
-                file_name = os.path.join(os.path.dirname(extender), file_name)
-
-        if section:
-            pass
-        elif parsed_section:
-            section = parsed_section
-        elif extender_section:
-            section = extender_section
-        else:
+        file_name, section = parse_file_name_and_section(
+            file_name, section, extender, extender_section)
+        if section is None:
             section = self.get_default_section(file_name)
-
         return file_name, section
+
+    def read_file(self, file_name, section=None, finalize=True):
+        """Read settings from config file."""
+        file_name, section = self.parse_file_name_and_section(file_name, section)
+
+        if not os.path.isfile(file_name):
+            raise SettingsFileNotFoundError(file_name)
+
+        section_dict, section_present = self.read_section(file_name, section)
+
+        settings = OrderedDict()
+
+        if 'extends' in section_dict:
+            extends = section_dict['extends']
+            del section_dict['extends']
+            if extends:
+                extends, extends_section = self.parse_file_name_and_section(
+                    extends, extender=file_name, extender_section=section)
+                extended_settings, extended_section_present = self.read_file(
+                    extends, extends_section, finalize=False)
+                section_present = section_present or extended_section_present
+                settings.update(extended_settings)
+
+        settings.update(section_dict)
+
+        if finalize:
+            if not section_present:
+                raise SettingsFileSectionNotFoundError(section)
+
+        return settings, section_present
 
     def get_default_section(self, file_name):
         return None
@@ -115,41 +128,25 @@ class INIStrategy(Strategy):
 
     file_types = ('ini',)
 
-    def __init__(self):
-        super(INIStrategy, self).__init__()
-        self.section_found_while_reading = False
-
-    def read_file(self, file_name, section=None):
-        """Read settings from specified ``section`` of config file."""
-        file_name, section = self.parse_file_name_and_section(file_name, section)
-        if not os.path.isfile(file_name):
-            raise SettingsFileNotFoundError(file_name)
+    def read_section(self, file_name, section):
         parser = self.make_parser()
         with open(file_name) as fp:
             parser.read_file(fp)
-
-        settings = OrderedDict()
-
         if parser.has_section(section):
-            section_dict = parser[section]
-            self.section_found_while_reading = True
+            items = parser[section]
+            section_present = True
         else:
-            section_dict = parser.defaults().copy()
-
-        extends = section_dict.get('extends')
-
-        if extends:
-            extends = self.decode_value(extends)
-            extends, extends_section = self.parse_file_name_and_section(
-                extends, extender=file_name, extender_section=section)
-            settings.update(self.read_file(extends, extends_section))
-
-        settings.update(section_dict)
-
-        if not self.section_found_while_reading:
-            raise SettingsFileSectionNotFoundError(section)
-
-        return settings
+            items = parser.defaults()
+            section_present = False
+        items = OrderedDict(items)
+        decoded_items = OrderedDict()
+        for k, v in items.items():
+            try:
+                v = self.decode_value(v)
+            except ValueError:
+                v = RawValue(v)
+            decoded_items[k] = v
+        return decoded_items, section_present
 
     def write_settings(self, settings, file_name, section):
         file_name, section = self.parse_file_name_and_section(file_name, section)
@@ -195,7 +192,7 @@ class INIJSONStrategy(INIStrategy):
     def decode_value(self, value):
         value = value.strip()
         if not value:
-            return ''
+            return None
         try:
             value = json.loads(value)
         except ValueError:
@@ -207,18 +204,23 @@ class INIJSONStrategy(INIStrategy):
 
 
 def get_strategy_types():
-    """Get a list of all :class:`Strategy` subclasses."""
+    """Get a list of all :class:`Strategy` subclasses.
+
+    The list will be ordered by file type extension.
+
+    """
     def get_subtypes(type_):
         subtypes = type_.__subclasses__()
         for subtype in subtypes:
             subtypes.extend(get_subtypes(subtype))
         return subtypes
-    return get_subtypes(Strategy)
+    sub_types = get_subtypes(Strategy)
+    return sorted(sub_types, key=lambda t: t.file_types[0])
 
 
 def get_file_type_map():
     """Map file types (extensions) to strategy types."""
-    file_type_map = {}
+    file_type_map = OrderedDict()
     for strategy_type in get_strategy_types():
         for ext in strategy_type.file_types:
             if ext in file_type_map:

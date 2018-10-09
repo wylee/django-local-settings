@@ -6,15 +6,13 @@ from six.moves import input
 
 from .base import Base
 from .color_printer import color_printer as printer
-from .strategy import INIJSONStrategy
 from .types import LocalSetting
 from .util import NO_DEFAULT, is_a_tty
 
 
 class Checker(Base):
 
-    def __init__(self, file_name, section=None, registry=None, strategy_type=INIJSONStrategy,
-                 prompt=None):
+    def __init__(self, file_name, section=None, registry=None, strategy_type=None, prompt=None):
         super(Checker, self).__init__(file_name, section, registry, strategy_type)
         if prompt is None:
             try:

@@ -20,7 +20,7 @@ class TestLoading(unittest.TestCase):
         self.assertEqual(local_setting.value, 'default value')
 
         settings = self.loader.load({
-            'BASE_SETTING': '{{PACKAGE}}',
+            'BASE_SETTING': '{{ PACKAGE }}',
             'LOCAL_SETTING': local_setting,
             'TUPLE_SETTING': ('a', 'b', 'c'),
             'LIST_SETTING': ['a', 'b', 'c'],
@@ -130,7 +130,18 @@ class TestLoading(unittest.TestCase):
         self.assertEqual(settings.INTERPOLATED.x, 'value')
         self.assertEqual(settings.get_dotted('INTERPOLATED.x'), 'value')
         self.assertEqual(settings.DEFAULT_ITEMS, expected['DEFAULT_ITEMS'])
-        self.assertEqual(settings, expected)
+
+        def check_item(k):
+            self.assertIn(k, settings)
+            self.assertEqual(settings[k], expected[k])
+
+        if hasattr(self, 'subTest'):  # Python 3.4+
+            for key in expected:
+                with self.subTest(key=key):
+                    check_item(key)
+        else:
+            for key in expected:
+                check_item(key)
 
     def test_delete(self):
         settings = self.loader.load({})
@@ -149,7 +160,7 @@ class TestLoading(unittest.TestCase):
                 'LOCAL_SETTING',
 
                 # NOTE: LIST.1 = 'b'
-                'A.{{LIST.1}}.c',
+                'A.{{ LIST.1 }}.c',
 
                 'LIST1.0',
             ],

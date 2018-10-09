@@ -5,7 +5,7 @@ from setuptools import find_packages, setup
 
 py_version = sys.version_info[:2]
 py_version_dotted = '{0.major}.{0.minor}'.format(sys.version_info)
-supported_py_versions = ('2.7', '3.3', '3.4', '3.5', '3.6')
+supported_py_versions = ('2.7', '3.3', '3.4', '3.5', '3.6', '3.7')
 
 
 if py_version_dotted not in supported_py_versions:
@@ -14,8 +14,10 @@ if py_version_dotted not in supported_py_versions:
     sys.stderr.write('\n')
 
 
-with open('VERSION') as version_fp:
-    VERSION = version_fp.read().strip()
+with open('local_settings/__init__.py') as fp:
+    for line in fp:
+        if line.startswith('__version__'):
+            __version__ = line.split('=')[1].strip()[1:-1]
 
 
 with open('README.md') as readme_fp:
@@ -34,16 +36,18 @@ if py_version < (3, 0):
 #       This is used to get up and running quickly; tox is used to test
 #       all supported Python/Django version combos.
 if py_version == (2, 7):
-    django_spec = 'django>=1.10,<1.11',
+    django_spec = 'django>=1.11,<1.12',
 if py_version == (3, 3):
     django_spec = 'django>=1.8,<1.9',
-else:
+if py_version == (3, 4):
     django_spec = 'django>=2.0,<2.1',
+else:
+    django_spec = 'django>=2.1,<2.2',
 
 
 setup(
     name='django-local-settings',
-    version=VERSION,
+    version=__version__,
     author='Wyatt Baldwin',
     author_email='self@wyattbaldwin.com',
     url='https://github.com/wylee/django-local-settings',
@@ -63,6 +67,7 @@ setup(
         'Development Status :: 4 - Beta',
         'Framework :: Django',
         'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
     ] + [
         'Programming Language :: Python :: {v}'.format(v=v)for v in supported_py_versions

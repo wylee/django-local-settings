@@ -45,7 +45,7 @@ Once the local settings are defined, *any missing settings will be prompted for 
 - Settings values can be injected into other settings values using a special syntax (AKA
   interpolation, similar to the standard library's `configparser`)
 - Includes a script to easily generate local settings files for different environments
-- Supports Python 2.7 - 3.6 (using [six](http://pythonhosted.org/six/))
+- Supports Python 2.7 - 3.7 (using [six](http://pythonhosted.org/six/))
 - Supports Django 1.7 - 2.0
 
 ## Basic usage
@@ -62,7 +62,7 @@ Once the local settings are defined, *any missing settings will be prompted for 
         DATABASES = {
             'default': {
                 'ENGINE': 'django.db.backends.postgresql',
-                'NAME': LocalSetting(default='{{PACKAGE}}'),
+                'NAME': LocalSetting(default='{{ PACKAGE }}'),
                 'USER': LocalSetting(''),
                 'PASSWORD': SecretSetting(),
                 'HOST': LocalSetting(''),

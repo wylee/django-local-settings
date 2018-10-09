@@ -3,6 +3,11 @@ class LocalSettingsError(Exception):
     pass
 
 
+class StrategyError(LocalSettingsError):
+
+    pass
+
+
 class SettingsFileNotFoundError(LocalSettingsError):
 
     pass

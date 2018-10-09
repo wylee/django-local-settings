@@ -1,19 +1,20 @@
 distribution = django-local-settings
-egg_name = django_local_settings
+egg_name = $(distribution:-=_)
 egg_info = $(egg_name).egg-info
 package = local_settings
 sdist = dist/$(distribution)-$(version).tar.gz
-venv = .env
+venv = .venv
 python_version ?= python3
-version = $(shell cat VERSION)
+version = $(shell sed -n "s/__version__ = '\(..*\)'/\1/p" local_settings/__init__.py)
 
 sources = $(shell find . \
-    -not -path '.' \
-    -not -path '*/\.*' \
-    -not -path './build' -not -path './build/*' \
-    -not -path './dist' -not -path './dist/*' \
-    -not -path './*\.egg-info' -not -path './*\.egg-info/*' \
-    -not -path '*/__pycache__*' \
+    -not -path '.'    \
+    -not -path './.*' \
+    -not -path '*/.*' \
+    -not -path './*.egg-info'  -not -path './*.egg-info/*'  \
+    -not -path './build'       -not -path './build/*'       \
+    -not -path './dist'        -not -path './dist/*'        \
+    -not -path '*/__pycache__' -not -path '*/__pycache__/*' \
 )
 
 init: install test
@@ -45,12 +46,13 @@ retox: tox-clean tox
 
 sdist: $(sdist)
 $(sdist): $(sources)
+	$(venv)/bin/pip install -e .[dev]
 	python setup.py sdist
 clean-sdist:
 	rm -f $(sdist)
 
 upload-to-pypi:
-	python setup.py sdist upload
+	twine upload $(sdist)
 
 clean: clean-pyc
 clean-all: clean-install clean-pyc clean-sdist clean-venv
