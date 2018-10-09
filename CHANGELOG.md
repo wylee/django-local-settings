@@ -1,8 +1,22 @@
 # Change Log for django-local-settings
 
-## 1.0.0 - unreleased
+## 1.0b9 - 2018-10-08
 
-In progress...
+- Added support for Python 3.7.
+- Fixed regression in 1.0b8 that causes spaces around names in
+  interpolation groups to throw an error.
+- Made various changes to internals to better support loading from alternative
+  types of settings files, YAML in particular (which is a work-in-progress in
+  a separate branch).
+- Default local settings file is now discovered based on supported file
+  types instead of unconditionally using "local.cfg".
+- The settings file loading strategy is now based on the name of the specified
+  local settings file instead of unconditionally using the INI/JSON loading
+  strategy.
+- Mutable vs. non-mutable mappings are now handled separately when
+  interpolating.
+- Simplified internals of loader, esp. wrt. decoding values & interpolation.
+
 
 ## 1.0b8 - 2018-01-13
 
