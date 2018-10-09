@@ -3,7 +3,7 @@ egg_name = $(distribution:-=_)
 egg_info = $(egg_name).egg-info
 package = local_settings
 sdist = dist/$(distribution)-$(version).tar.gz
-venv = .env
+venv = .venv
 python_version ?= python3
 version = $(shell sed -n "s/__version__ = '\(..*\)'/\1/p" local_settings/__init__.py)
 
