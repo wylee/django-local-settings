@@ -71,26 +71,22 @@ class Strategy(with_metaclass(ABCMeta)):
         if not os.path.isfile(file_name):
             raise SettingsFileNotFoundError(file_name)
 
-        section_dict, section_present = self.read_section(file_name, section)
-
         settings = OrderedDict()
+        section_dict, section_present = self.read_section(file_name, section)
+        extends = section_dict.pop('extends', None)
 
-        if 'extends' in section_dict:
-            extends = section_dict['extends']
-            del section_dict['extends']
-            if extends:
-                extends, extends_section = self.parse_file_name_and_section(
-                    extends, extender=file_name, extender_section=section)
-                extended_settings, extended_section_present = self.read_file(
-                    extends, extends_section, finalize=False)
-                section_present = section_present or extended_section_present
-                settings.update(extended_settings)
+        if extends:
+            extends, extends_section = self.parse_file_name_and_section(
+                extends, extender=file_name, extender_section=section)
+            extended_settings, extended_section_present = self.read_file(
+                extends, extends_section, finalize=False)
+            section_present = section_present or extended_section_present
+            settings.update(extended_settings)
 
         settings.update(section_dict)
 
-        if finalize:
-            if not section_present:
-                raise SettingsFileSectionNotFoundError(section)
+        if finalize and not section_present:
+            raise SettingsFileSectionNotFoundError(section)
 
         return settings, section_present
 
