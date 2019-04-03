@@ -93,6 +93,28 @@ class Strategy(with_metaclass(ABCMeta)):
     def get_default_section(self, file_name):
         return None
 
+    def decode_items(self, items):
+        """Bulk decode items read from file to Python objects.
+
+        Args:
+            items: A sequence of items as would be returned from
+                ``dict.items()``.
+
+        Returns:
+            OrderedDict: A new ordered dict with item values decoded
+                where possible. Values that can't be decoded will be
+                wrapped with :class:`RawValue`.
+
+        """
+        decoded_items = OrderedDict()
+        for k, v in items:
+            try:
+                v = self.decode_value(v)
+            except ValueError:
+                v = RawValue(v)
+            decoded_items[k] = v
+        return decoded_items
+
     def decode_value(self, value):
         """Decode value read from file to Python object."""
         return value
@@ -134,15 +156,8 @@ class INIStrategy(Strategy):
         else:
             items = parser.defaults()
             section_present = False
-        items = OrderedDict(items)
-        decoded_items = OrderedDict()
-        for k, v in items.items():
-            try:
-                v = self.decode_value(v)
-            except ValueError:
-                v = RawValue(v)
-            decoded_items[k] = v
         return decoded_items, section_present
+        decoded_items = self.decode_items(items.items())
 
     def write_settings(self, settings, file_name, section):
         file_name, section = self.parse_file_name_and_section(file_name, section)
