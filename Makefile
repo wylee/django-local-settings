@@ -8,13 +8,17 @@ python_version ?= python3
 version = $(shell sed -n "s/__version__ = '\(..*\)'/\1/p" local_settings/__init__.py)
 
 sources = $(shell find . \
-    -not -path '.'    \
-    -not -path './.*' \
-    -not -path '*/.*' \
-    -not -path './*.egg-info'  -not -path './*.egg-info/*'  \
-    -not -path './build'       -not -path './build/*'       \
-    -not -path './dist'        -not -path './dist/*'        \
-    -not -path '*/__pycache__' -not -path '*/__pycache__/*' \
+    \( \
+        -name '*.py?' -o \
+        -path '*/.*' -o \
+        -path '*/__pycache__*' -o \
+        -path './*.egg-info*' -o \
+        -path './build*' -o \
+        -path './dist*' \
+    \) \
+    -prune -o \
+    -type f \
+    -print \
 )
 
 init: install test
