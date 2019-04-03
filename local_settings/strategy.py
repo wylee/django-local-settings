@@ -129,12 +129,13 @@ class LocalSettingsConfigParser(RawConfigParser):
     def options(self, section):
         # Order [DEFAULT] options before section options; the default
         # implementation orders them after.
-        options = self._defaults.copy()
+        options = list(self._defaults.keys())
         try:
-            options.update(self._sections[section])
+            section = self._sections[section]
         except KeyError:
             raise_from(NoSectionError(section), None)
-        return list(options.keys())
+        options.extend(k for k in section.keys() if k not in self._defaults)
+        return options
 
     def optionxform(self, option):
         # Don't alter option names; the default implementation lower
