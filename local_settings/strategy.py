@@ -32,14 +32,23 @@ class Strategy(with_metaclass(ABCMeta)):
     file_types = ()
 
     @abstractmethod
+    def get_defaults(self, file_name):
+        """Get default settings from file.
+
+        Returns:
+            - Settings from the default section.
+
+        """
+
+    @abstractmethod
     def read_section(self, file_name, section=None):
         """Read settings from specified ``section`` of config file.
 
         This is where the strategy-specific file-reading logic goes.
 
         Returns:
-            - Settings from the specified section or from the default
-              section if the specified section isn't present.
+            - Settings from the specified section or an empty dict if
+              the section isn't present.
             - Whether the section is present.
 
         """
@@ -64,31 +73,61 @@ class Strategy(with_metaclass(ABCMeta)):
             section = self.get_default_section(file_name)
         return file_name, section
 
-    def read_file(self, file_name, section=None, finalize=True):
+    def read_file(self, file_name, section=None, _finalize=True):
         """Read settings from config file."""
-        file_name, section = self.parse_file_name_and_section(file_name, section)
+        if _finalize:
+            file_name, section = self.parse_file_name_and_section(file_name, section)
 
         if not os.path.isfile(file_name):
             raise SettingsFileNotFoundError(file_name)
 
         settings = OrderedDict()
-        section_dict, section_present = self.read_section(file_name, section)
-        extends = section_dict.pop('extends', None)
+
+        file_settings, section_present, extends, extends_section = \
+            self._read_one_file(file_name, section)
 
         if extends:
-            extends, extends_section = self.parse_file_name_and_section(
-                extends, extender=file_name, extender_section=section)
-            extended_settings, extended_section_present = self.read_file(
-                extends, extends_section, finalize=False)
-            section_present = section_present or extended_section_present
-            settings.update(extended_settings)
+            if extends != file_name:
+                extends_settings, extends_section_present = \
+                    self.read_file(extends, extends_section, _finalize=False)
+                section_present = section_present or extends_section_present
+                settings.update(extends_settings)
 
-        settings.update(section_dict)
+        settings.update(file_settings)
 
-        if finalize and not section_present:
-            raise SettingsFileSectionNotFoundError(section)
+        if _finalize:
+            if not section_present:
+                raise SettingsFileSectionNotFoundError(section)
+        else:
+            return settings, section_present
 
-        return settings, section_present
+        return settings
+
+    def _read_one_file(self, file_name, section, settings=None):
+        """Read settings from a single config file."""
+        if settings is None:
+            settings = self.get_defaults(file_name)
+
+        items, section_present = self.read_section(file_name, section)
+        default_extends = settings.get('extends', None)
+        extends = items.pop('extends', default_extends)
+
+        if extends:
+            extends, extends_section = \
+                self.parse_file_name_and_section(
+                    extends, extender=file_name, extender_section=section)
+
+            if extends == file_name:
+                extends_items, extends_section_present, _, __ = \
+                    self._read_one_file(file_name, extends_section, settings)
+                settings.update(extends_items)
+                section_present = section_present or extends_section_present
+        else:
+            extends_section = None
+
+        settings.update(items)
+        settings.pop('extends', None)
+        return settings, section_present, extends, extends_section
 
     def get_default_section(self, file_name):
         return None
@@ -142,6 +181,17 @@ class LocalSettingsConfigParser(RawConfigParser):
         # cases them.
         return option
 
+    def get_section(self, section):
+        """Get section without defaults.
+
+        When retrieving a section from a :class:`RawConfigParser` using
+        ``parser[section]``, defaults are included. To get a section's
+        items without defaults, we have to access the semi-private
+        ``_sections`` instance variable, which is encapsulated here.
+
+        """
+        return self._sections[section]
+
 
 class INIStrategy(Strategy):
 
@@ -151,16 +201,20 @@ class INIStrategy(Strategy):
         # Cache parsers by file name
         self._parser_cache = {}
 
+    def get_defaults(self, file_name):
+        """Get default settings from ``[DEFAULT]`` section of file."""
+        parser = self.get_parser(file_name)
+        defaults = parser.defaults()
+        return self.decode_items(defaults.items())
+
     def read_section(self, file_name, section):
         parser = self.get_parser(file_name)
         if parser.has_section(section):
-            items = parser[section]
-            section_present = True
+            items, section_present = parser.get_section(section), True
         else:
-            items = parser.defaults()
-            section_present = False
-        return decoded_items, section_present
+            items, section_present = {}, False
         decoded_items = self.decode_items(items.items())
+        return decoded_items, section_present
 
     def write_settings(self, settings, file_name, section):
         file_name, section = self.parse_file_name_and_section(file_name, section)
