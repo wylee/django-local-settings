@@ -273,7 +273,7 @@ class DottedAccessMixin:
         Otherwise, return it as is.
 
         """
-        if re.search('^\d+$', name):
+        if re.search(r'^\d+$', name):
             if len(name) > 1 and name[0] == '0':
                 # Don't treat strings beginning with "0" as ints
                 return name

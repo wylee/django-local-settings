@@ -1,12 +1,11 @@
 import json
 import os
-import pkg_resources
 import sys
 
 from .color_printer import color_printer as printer
 from .exc import SettingsFileDidNotPassCheck
 from .loader import Loader
-from .util import get_file_name
+from .util import abs_path, get_file_name
 
 # Exported (but unused locally)
 from .checker import Checker  # noqa: exported
@@ -18,7 +17,7 @@ from .util import get_default_file_names
 from .__main__ import make_local_settings  # noqa: exported
 
 
-__version__ = '1.0b9'
+__version__ = '1.0b10'
 
 
 def load_and_check_settings(base_settings, file_name=None, section=None, base_path=None,
@@ -78,12 +77,8 @@ def load_and_check_settings(base_settings, file_name=None, section=None, base_pa
             'No local settings file was specified and no default settings file was found in the '
             'current working directory (cwd = {cwd}, defaults = {default_file_names})'
             .format(**locals()))
-    if ':' in file_name:
-        package, path = file_name.split(':', 1)
-        file_name = pkg_resources.resource_filename(package, path)
-    if not os.path.isabs(file_name):
-        base_path = base_path or os.getcwd()
-        file_name = os.path.normpath(os.path.join(base_path, file_name))
+    base_path = base_path or os.getcwd()
+    file_name = abs_path(file_name, relative_to=base_path)
     try:
         loader = Loader(file_name, section, strategy_type=strategy_type)
         settings, success = loader.load_and_check(base_settings, prompt)

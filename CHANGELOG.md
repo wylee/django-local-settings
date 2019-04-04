@@ -1,5 +1,13 @@
 # Change Log for django-local-settings
 
+## 1.0b10 - 2019-04-04
+
+- Made settings file/section inheritance more intuitive. This change is
+  backward incompatible but is, I think, unlikely to cause issues in
+  most cases because previously the workaround for the unintuitive way
+  inheritance worked was to add redundant settings in extending
+  sections. See ba09782e0608a47fe53f24d30ea7750acb0c4b0b.
+
 ## 1.0b9 - 2018-10-08
 
 - Added support for Python 3.7.
@@ -16,7 +24,6 @@
 - Mutable vs. non-mutable mappings are now handled separately when
   interpolating.
 - Simplified internals of loader, esp. wrt. decoding values & interpolation.
-
 
 ## 1.0b8 - 2018-01-13
 

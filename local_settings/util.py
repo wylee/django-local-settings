@@ -1,6 +1,6 @@
+import importlib
 import io
 import os
-import pkg_resources
 
 
 NO_DEFAULT = type('NO_DEFAULT', (), {
@@ -70,8 +70,7 @@ def parse_file_name_and_section(file_name, section=None, extender=None, extender
         parsed_section = None
 
     if ':' in file_name:
-        package, path = file_name.split(':', 1)
-        file_name = pkg_resources.resource_filename(package, path)
+        file_name = asset_path(file_name)
 
     if extender:
         if not file_name:
@@ -79,7 +78,7 @@ def parse_file_name_and_section(file_name, section=None, extender=None, extender
             file_name = extender
         elif not os.path.isabs(file_name):
             # Extended by another file in the same directory
-            file_name = os.path.join(os.path.dirname(extender), file_name)
+            file_name = abs_path(file_name, relative_to=os.path.dirname(extender))
 
     if section:
         pass
@@ -91,6 +90,49 @@ def parse_file_name_and_section(file_name, section=None, extender=None, extender
         section = None
 
     return file_name, section
+
+
+# Path utilities
+
+
+def abs_path(path, relative_to=None):
+    """Make path absolute and normalize it."""
+    if os.path.isabs(path):
+        path = os.path.normpath(path)
+    elif ':' in path:
+        path = asset_path(path)
+    else:
+        path = os.path.expanduser(path)
+        if relative_to:
+            path = os.path.join(relative_to, path)
+        path = os.path.abspath(path)
+        path = os.path.normpath(path)
+    return path
+
+
+def asset_path(path):
+    """Get absolute path from asset spec and normalize it."""
+    if ':' in path:
+        package_name, rel_path = path.split(':', 1)
+    else:
+        package_name, rel_path = path, ''
+
+    try:
+        package = importlib.import_module(package_name)
+    except ImportError:
+        raise ValueError(
+            'Could not get asset path for {path}; could not import package: {package_name}'
+            .format_map(locals()))
+
+    if not hasattr(package, '__file__'):
+        raise ValueError("Can't compute path relative to namespace package")
+
+    package_path = os.path.dirname(package.__file__)
+    if rel_path:
+        path = os.path.join(package_path, rel_path)
+    path = os.path.normpath(path)
+
+    return path
 
 
 # These TTY functions were copied from Invoke
