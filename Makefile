@@ -1,5 +1,5 @@
 distribution = django-local-settings
-egg_name = $(distribution:-=_)
+egg_name = $(subst -,_,$(distribution))
 egg_info = $(egg_name).egg-info
 package = local_settings
 sdist = dist/$(distribution)-$(version).tar.gz
