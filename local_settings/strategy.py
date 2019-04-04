@@ -147,10 +147,12 @@ class INIStrategy(Strategy):
 
     file_types = ('ini',)
 
+    def __init__(self):
+        # Cache parsers by file name
+        self._parser_cache = {}
+
     def read_section(self, file_name, section):
-        parser = self.make_parser()
-        with open(file_name) as fp:
-            parser.read_file(fp)
+        parser = self.get_parser(file_name)
         if parser.has_section(section):
             items = parser[section]
             section_present = True
@@ -186,15 +188,21 @@ class INIStrategy(Strategy):
         """Returns first non-DEFAULT section; falls back to DEFAULT."""
         if not os.path.isfile(file_name):
             return 'DEFAULT'
-        parser = self.make_parser()
-        with open(file_name) as fp:
-            parser.read_file(fp)
+        parser = self.get_parser(file_name)
         sections = parser.sections()
         section = sections[0] if len(sections) > 0 else 'DEFAULT'
         return section
 
-    def make_parser(self, *args, **kwargs):
-        return LocalSettingsConfigParser(*args, **kwargs)
+    def get_parser(self, file_name):
+        if file_name not in self._parser_cache:
+            parser = self.make_parser()
+            with open(file_name) as fp:
+                parser.read_file(fp)
+            self._parser_cache[file_name] = parser
+        return self._parser_cache[file_name]
+
+    def make_parser(self):
+        return LocalSettingsConfigParser()
 
 
 class INIJSONStrategy(INIStrategy):
