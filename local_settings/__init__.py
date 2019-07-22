@@ -40,7 +40,7 @@ def load_and_check_settings(base_settings, file_name=None, section=None, base_pa
     the file does not exist, it will be created and all settings will be
     added to it.
 
-    If a file name isn't passed: if the ``LOCAL_SETTINGS_FILE_NAME``
+    If a file name isn't passed: if the ``LOCAL_SETTINGS_FILE``
     environment variable is set, the specified file will be used;
     otherwise ``{base_path}/local.{ext}`` will be used.
 
