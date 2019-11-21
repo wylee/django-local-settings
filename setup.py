@@ -67,7 +67,6 @@ setup(
         'Development Status :: 4 - Beta',
         'Framework :: Django',
         'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
     ] + [
         'Programming Language :: Python :: {v}'.format(v=v)for v in supported_py_versions
