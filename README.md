@@ -48,7 +48,7 @@ Once the local settings are defined, *any missing settings will be prompted for 
 - Supports Python 2.7 and 3.5 - 3.7 (using [six](http://pythonhosted.org/six/))
 - Python 3.3 and 3.4 aren't officially supported but there shouldn't be any issues on those
   versions since 2.7 *is* officially supported (for now).
-- Supports Django 1.7 - 2.0
+- Supports Django 1.7 - 2.2
 
 ## Basic usage
 

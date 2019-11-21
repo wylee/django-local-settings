@@ -38,7 +38,7 @@ if py_version < (3, 0):
 if py_version == (2, 7):
     django_spec = 'django>=1.11,<1.12',
 else:
-    django_spec = 'django>=2.1,<2.2',
+    django_spec = 'django>=2.2,<2.3',
 
 
 setup(
