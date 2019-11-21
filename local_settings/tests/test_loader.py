@@ -1,4 +1,5 @@
 import os
+import sys
 import unittest
 
 from ..loader import Loader
@@ -135,7 +136,7 @@ class TestLoading(unittest.TestCase):
             self.assertIn(k, settings)
             self.assertEqual(settings[k], expected[k])
 
-        if hasattr(self, 'subTest'):  # Python 3.4+
+        if sys.version_info[:2] >= (3, 5):
             for key in expected:
                 with self.subTest(key=key):
                     check_item(key)
