@@ -1,5 +1,9 @@
 # Change Log for django-local-settings
 
+## 1.0b11 - unreleased
+
+In progress...
+
 ## 1.0b10 - 2019-04-04
 
 - Made settings file/section inheritance more intuitive. This change is
