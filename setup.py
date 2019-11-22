@@ -49,6 +49,7 @@ setup(
     url='https://github.com/wylee/django-local-settings',
     description='A system for dealing with local settings in Django projects',
     long_description=long_description,
+    long_description_content_type='text/markdown',
     packages=find_packages(),
     install_requires=install_requires,
     extras_require={
