@@ -53,10 +53,10 @@ setup(
     install_requires=install_requires,
     extras_require={
         'dev': [
-            'coverage>=4',
             django_spec,
+            'coverage',
             'flake8',
-            'tox>=2.6.0',
+            'tox',
         ],
     },
     classifiers=[
