@@ -17,7 +17,7 @@ from .util import get_default_file_names
 from .__main__ import make_local_settings  # noqa: exported
 
 
-__version__ = '1.0b10'
+__version__ = '1.0b11.dev0'
 
 
 def load_and_check_settings(base_settings, file_name=None, section=None, base_path=None,
