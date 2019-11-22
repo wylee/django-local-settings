@@ -27,7 +27,7 @@ reinit: clean-venv clean-install init
 venv: $(venv)
 $(venv):
 	$(python_version) -m venv $(venv)
-	$(venv)/bin/pip install --upgrade --upgrade-strategy eager pip
+	$(venv)/bin/pip install --upgrade --upgrade-strategy eager pip setuptools
 clean-venv:
 	rm -rf $(venv)
 
