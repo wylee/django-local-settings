@@ -1,5 +1,9 @@
 # Change Log for django-local-settings
 
+## 1.0b12 - unreleased
+
+In progress...
+
 ## 1.0b11 - 2019-11-21
 
 - Dropped *official* support for Python 3.3 and 3.4 since these versions are
