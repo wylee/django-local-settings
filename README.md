@@ -45,8 +45,10 @@ Once the local settings are defined, *any missing settings will be prompted for 
 - Settings values can be injected into other settings values using a special syntax (AKA
   interpolation, similar to the standard library's `configparser`)
 - Includes a script to easily generate local settings files for different environments
-- Supports Python 2.7 - 3.7 (using [six](http://pythonhosted.org/six/))
-- Supports Django 1.7 - 2.0
+- Supports Python 2.7 and 3.5 - 3.8 (using [six](http://pythonhosted.org/six/))
+- Python 3.3 and 3.4 aren't officially supported but there shouldn't be any issues on those
+  versions since 2.7 *is* officially supported (for now).
+- Supports Django 1.7 - 2.2
 
 ## Basic usage
 

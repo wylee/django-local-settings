@@ -1,5 +1,14 @@
 # Change Log for django-local-settings
 
+## 1.0b11 - 2019-11-21
+
+- Dropped *official* support for Python 3.3 and 3.4 since these versions are
+  end-of-life. Since we still support Python 2.7 (for now), there shouldn't be
+  any issues on 3.3 or 3.4 (since we won't be using any Python 3.5-and-up-only
+  features).
+- Added support for Python 3.8.
+- Added support for Django 2.2.
+
 ## 1.0b10 - 2019-04-04
 
 - Made settings file/section inheritance more intuitive. This change is
