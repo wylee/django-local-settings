@@ -70,10 +70,10 @@ class Checker(Base):
             name = k if not prefix else '{0}.{1}'.format(prefix, k)
             if not isinstance(v, LocalSetting):
                 self._check(v, name, settings_to_write, missing)
-            elif k not in settings_to_write:
-                # Note: If k is already in settings_to_write, this local
-                # setting was set as a result of being another setting's
-                # default.
+            elif name not in settings_to_write:
+                # Note: If name is already in settings_to_write, this
+                # local setting was set as a result of being another
+                # setting's default.
                 is_set = False
                 local_setting = v
 
