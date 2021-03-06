@@ -5,7 +5,7 @@ from setuptools import find_packages, setup
 
 py_version = sys.version_info[:2]
 py_version_dotted = '{0.major}.{0.minor}'.format(sys.version_info)
-supported_py_versions = ('2.7', '3.5', '3.6', '3.7', '3.8')
+supported_py_versions = ('2.7', '3.5', '3.6', '3.7', '3.8', '3.9')
 
 
 if py_version_dotted not in supported_py_versions:
@@ -38,7 +38,7 @@ if py_version < (3, 0):
 if py_version == (2, 7):
     django_spec = 'django>=1.11,<1.12',
 else:
-    django_spec = 'django>=2.2,<2.3',
+    django_spec = 'django>=3.1,<3.2',
 
 
 setup(
