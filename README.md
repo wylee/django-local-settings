@@ -1,5 +1,11 @@
 # Local settings for Django projects
 
+_NOTE: I started this project in October of 2014 when I was working full time on a bunch of Django
+projects. If I had known about TOML at the time, I would have based this on TOML. At some point,
+I plan to add TOML as a supported config file type... unless there's someone out there who's
+interested in doing that :)_
+
+
 This package attempts to solve the problem of handling local settings in Django projects. Local
 settings by definition can't be pre-defined, although perhaps they can have a reasonable default
 value (mainly useful for development). Another class of local settings are *secret* settings; these
