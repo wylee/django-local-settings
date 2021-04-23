@@ -3,31 +3,28 @@ import logging
 import json
 import os
 from abc import ABCMeta, abstractmethod
-from collections import OrderedDict
 from configparser import NoSectionError, RawConfigParser
-
-from six import raise_from, text_type, with_metaclass
 
 from .exc import SettingsFileNotFoundError, SettingsFileSectionNotFoundError
 from .util import parse_file_name_and_section
 
 
 __all__ = [
-    'Strategy',
-    'INIStrategy',
-    'INIJSONStrategy',
+    "Strategy",
+    "INIStrategy",
+    "INIJSONStrategy",
 ]
 
 
 log = logging.getLogger(__name__)
 
 
-class RawValue(text_type):
+class RawValue(str):
 
     """Marker for values that couldn't be decoded when reading."""
 
 
-class Strategy(with_metaclass(ABCMeta)):
+class Strategy(metaclass=ABCMeta):
 
     file_types = ()
 
@@ -57,8 +54,13 @@ class Strategy(with_metaclass(ABCMeta)):
     def write_settings(self, settings, file_name, section=None):
         """Write settings to file."""
 
-    def parse_file_name_and_section(self, file_name, section=None, extender=None,
-                                    extender_section=None):
+    def parse_file_name_and_section(
+        self,
+        file_name,
+        section=None,
+        extender=None,
+        extender_section=None,
+    ):
         """Parse file name and (maybe) section.
 
         Delegates to :func:`.util.parse_file_name_and_section` to parse
@@ -68,7 +70,11 @@ class Strategy(with_metaclass(ABCMeta)):
 
         """
         file_name, section = parse_file_name_and_section(
-            file_name, section, extender, extender_section)
+            file_name,
+            section,
+            extender,
+            extender_section,
+        )
         if section is None:
             section = self.get_default_section(file_name)
         return file_name, section
@@ -81,15 +87,15 @@ class Strategy(with_metaclass(ABCMeta)):
         if not os.path.isfile(file_name):
             raise SettingsFileNotFoundError(file_name)
 
-        settings = OrderedDict()
+        settings = {}
 
-        file_settings, section_present, extends, extends_section = \
-            self._read_one_file(file_name, section)
+        result = self._read_one_file(file_name, section)
+        file_settings, section_present, extends, extends_section = result
 
         if extends:
             if extends != file_name:
-                extends_settings, extends_section_present = \
-                    self.read_file(extends, extends_section, _finalize=False)
+                result = self.read_file(extends, extends_section, _finalize=False)
+                extends_settings, extends_section_present = result
                 section_present = section_present or extends_section_present
                 settings.update(extends_settings)
 
@@ -109,24 +115,27 @@ class Strategy(with_metaclass(ABCMeta)):
             settings = self.get_defaults(file_name)
 
         items, section_present = self.read_section(file_name, section)
-        default_extends = settings.get('extends', None)
-        extends = items.pop('extends', default_extends)
+        default_extends = settings.get("extends", None)
+        extends = items.pop("extends", default_extends)
 
         if extends:
-            extends, extends_section = \
-                self.parse_file_name_and_section(
-                    extends, extender=file_name, extender_section=section)
+            result = self.parse_file_name_and_section(
+                extends,
+                extender=file_name,
+                extender_section=section,
+            )
+            extends, extends_section = result
 
             if extends == file_name:
-                extends_items, extends_section_present, _, __ = \
-                    self._read_one_file(file_name, extends_section, settings)
+                result = self._read_one_file(file_name, extends_section, settings)
+                extends_items, extends_section_present, *rest = result
                 settings.update(extends_items)
                 section_present = section_present or extends_section_present
         else:
             extends_section = None
 
         settings.update(items)
-        settings.pop('extends', None)
+        settings.pop("extends", None)
         return settings, section_present, extends, extends_section
 
     def get_default_section(self, file_name):
@@ -140,12 +149,12 @@ class Strategy(with_metaclass(ABCMeta)):
                 ``dict.items()``.
 
         Returns:
-            OrderedDict: A new ordered dict with item values decoded
-                where possible. Values that can't be decoded will be
-                wrapped with :class:`RawValue`.
+            dict: A new dict with item values decoded where possible.
+                Values that can't be decoded will be wrapped with
+                :class:`RawValue`.
 
         """
-        decoded_items = OrderedDict()
+        decoded_items = {}
         for k, v in items:
             try:
                 v = self.decode_value(v)
@@ -164,7 +173,6 @@ class Strategy(with_metaclass(ABCMeta)):
 
 
 class LocalSettingsConfigParser(RawConfigParser):
-
     def options(self, section):
         # Order [DEFAULT] options before section options; the default
         # implementation orders them after.
@@ -172,7 +180,7 @@ class LocalSettingsConfigParser(RawConfigParser):
         try:
             section = self._sections[section]
         except KeyError:
-            raise_from(NoSectionError(section), None)
+            raise NoSectionError(section) from None
         options.extend(k for k in section.keys() if k not in self._defaults)
         return options
 
@@ -195,7 +203,7 @@ class LocalSettingsConfigParser(RawConfigParser):
 
 class INIStrategy(Strategy):
 
-    file_types = ('ini',)
+    file_types = ("ini",)
 
     def __init__(self):
         # Cache parsers by file name
@@ -223,28 +231,28 @@ class INIStrategy(Strategy):
             with open(file_name) as fp:
                 parser.read_file(fp)
         else:
-            log.info('Creating new local settings file: %s', file_name)
+            log.info("Creating new local settings file: %s", file_name)
         if section not in parser:
-            log.info('Adding new section to %s: %s', file_name, section)
+            log.info("Adding new section to %s: %s", file_name, section)
             parser.add_section(section)
         sorted_keys = sorted(settings.keys())
         for name in sorted_keys:
             value = self.encode_value(settings[name])
             settings[name] = value
             parser[section][name] = value
-        with open(file_name, 'w') as fp:
+        with open(file_name, "w") as fp:
             parser.write(fp)
         for name in sorted_keys:
             value = settings[name]
-            log.info('Saved %s to %s as: %s', name, file_name, value)
+            log.info("Saved %s to %s as: %s", name, file_name, value)
 
     def get_default_section(self, file_name):
         """Returns first non-DEFAULT section; falls back to DEFAULT."""
         if not os.path.isfile(file_name):
-            return 'DEFAULT'
+            return "DEFAULT"
         parser = self.get_parser(file_name)
         sections = parser.sections()
-        section = sections[0] if len(sections) > 0 else 'DEFAULT'
+        section = sections[0] if len(sections) > 0 else "DEFAULT"
         return section
 
     def get_parser(self, file_name):
@@ -261,7 +269,7 @@ class INIStrategy(Strategy):
 
 class INIJSONStrategy(INIStrategy):
 
-    file_types = ('cfg',)
+    file_types = ("cfg",)
 
     def decode_value(self, value):
         value = value.strip()
@@ -270,7 +278,7 @@ class INIJSONStrategy(INIStrategy):
         try:
             value = json.loads(value)
         except ValueError:
-            raise ValueError('Could not parse `{value}` as JSON'.format(**locals()))
+            raise ValueError(f"Could not parse `{value}` as JSON")
         return value
 
     def encode_value(self, value):
@@ -283,24 +291,26 @@ def get_strategy_types():
     The list will be ordered by file type extension.
 
     """
+
     def get_subtypes(type_):
         subtypes = type_.__subclasses__()
         for subtype in subtypes:
             subtypes.extend(get_subtypes(subtype))
         return subtypes
+
     sub_types = get_subtypes(Strategy)
     return sorted(sub_types, key=lambda t: t.file_types[0])
 
 
 def get_file_type_map():
     """Map file types (extensions) to strategy types."""
-    file_type_map = OrderedDict()
+    file_type_map = {}
     for strategy_type in get_strategy_types():
         for ext in strategy_type.file_types:
             if ext in file_type_map:
                 raise KeyError(
-                    'File type {ext} already registered to {file_type_map[ext]}'
-                    .format(**locals()))
+                    f"File type {ext} already registered to " f"{file_type_map[ext]}"
+                )
             file_type_map[ext] = strategy_type
     return file_type_map
 
@@ -317,10 +327,10 @@ def guess_strategy_type(file_name_or_ext):
             corresponding strategy type
 
     """
-    if '.' not in file_name_or_ext:
+    if "." not in file_name_or_ext:
         ext = file_name_or_ext
     else:
         name, ext = os.path.splitext(file_name_or_ext)
-    ext = ext.lstrip('.')
+    ext = ext.lstrip(".")
     file_type_map = get_file_type_map()
     return file_type_map.get(ext, None)

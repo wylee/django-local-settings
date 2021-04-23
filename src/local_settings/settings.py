@@ -191,7 +191,7 @@ class DottedAccessMixin:
 
         """
         if not path:
-            raise ValueError('path cannot be empty')
+            raise ValueError("path cannot be empty")
 
         i = 0
         length = len(path)
@@ -202,7 +202,7 @@ class DottedAccessMixin:
         convert_name = self._convert_name
 
         def append_segment():
-            segment = ''.join(collector)
+            segment = "".join(collector)
             if not group:
                 segment = convert_name(segment)
             segments.append(segment)
@@ -214,12 +214,12 @@ class DottedAccessMixin:
             try:
                 d = path[i + 1]
             except IndexError:
-                d = ' '
+                d = " "
 
-            if c == '.' and not stack:
+            if c == "." and not stack:
                 append_segment()
                 group = False
-            elif c == '(':
+            elif c == "(":
                 # Consume everything inside outer parentheses, including
                 # inner parentheses. We'll know we've reached the right
                 # outer paren when the stack is back to its height before
@@ -229,27 +229,27 @@ class DottedAccessMixin:
                 i += 1  # Skip outer left paren
                 while i < length:
                     e = path[i]
-                    if e == '(':
+                    if e == "(":
                         stack.append(e)
-                    elif e == ')':
+                    elif e == ")":
                         item = stack.pop()
-                        if item != '(':
-                            raise ValueError('Unclosed (...) in %s' % path)
+                        if item != "(":
+                            raise ValueError("Unclosed (...) in %s" % path)
                         if len(stack) == stack_len:
                             group = True
                             break
                     # Add char here so outer right paren isn't collected.
                     collector.append(e)
                     i += 1
-            elif c == '{' and d == '{':
-                stack.append('{{')
-                collector.append('{{')
+            elif c == "{" and d == "{":
+                stack.append("{{")
+                collector.append("{{")
                 i += 1
-            elif c == '}' and d == '}':
+            elif c == "}" and d == "}":
                 item = stack.pop()
-                if item != '{{':
-                    raise ValueError('Unclosed {{ ... }} in %s' % path)
-                collector.append('}}')
+                if item != "{{":
+                    raise ValueError("Unclosed {{ ... }} in %s" % path)
+                collector.append("}}")
                 group = True
                 i += 1
             else:
@@ -259,8 +259,8 @@ class DottedAccessMixin:
 
         if stack:
             bracket = stack[-1]
-            close_bracket = ')' if bracket == '(' else '}}'
-            raise ValueError('Unclosed %s...%s in %s' % (bracket, close_bracket, path))
+            close_bracket = ")" if bracket == "(" else "}}"
+            raise ValueError("Unclosed %s...%s in %s" % (bracket, close_bracket, path))
 
         if collector:
             append_segment()
@@ -273,8 +273,8 @@ class DottedAccessMixin:
         Otherwise, return it as is.
 
         """
-        if re.search(r'^\d+$', name):
-            if len(name) > 1 and name[0] == '0':
+        if re.search(r"^\d+$", name):
+            if len(name) > 1 and name[0] == "0":
                 # Don't treat strings beginning with "0" as ints
                 return name
             return int(name)
@@ -355,7 +355,7 @@ class Settings(dict, DottedAccessMixin):
     def __setitem__(self, name, value):
         if isinstance(value, Mapping):
             value = Settings(value)
-        super(Settings, self).__setitem__(name, value)
+        super().__setitem__(name, value)
 
     # Implementation of attribute access.
 
@@ -393,15 +393,16 @@ class Settings(dict, DottedAccessMixin):
     def update(*args, **kwargs):
         if len(args) > 2:
             raise TypeError(
-                'update() takes at most 2 positional arguments ({} given)'.format(len(args)))
+                f"update() takes at most 2 positional arguments " f"({len(args)} given)"
+            )
         elif not args:
-            raise TypeError('update() takes at least 1 argument (0 given)')
+            raise TypeError("update() takes at least 1 argument (0 given)")
         self = args[0]
         other = args[1] if len(args) >= 2 else ()
         if isinstance(other, Mapping):
             for name in other:
                 self[name] = other[name]
-        elif hasattr(other, 'keys'):
+        elif hasattr(other, "keys"):
             for name in other.keys():
                 self[name] = other[name]
         else:

@@ -1,11 +1,10 @@
 import unittest
 
-from ..exc import NoDefaultError
-from ..types import LocalSetting
+from local_settings.exc import NoDefaultError
+from local_settings.types import LocalSetting
 
 
 class TestLocalSetting(unittest.TestCase):
-
     def test_create_local_setting(self):
         setting = LocalSetting()
         self.assertRaises(NoDefaultError, lambda: setting.default)
@@ -21,9 +20,9 @@ class TestLocalSetting(unittest.TestCase):
 
     def test_set_value_of_local_setting_with_default(self):
         setting = LocalSetting(default={})
-        setting.value = 'X'
+        setting.value = "X"
         self.assertEqual(setting.default, {})
-        self.assertEqual(setting.value, 'X')
+        self.assertEqual(setting.value, "X")
 
     def test_local_setting_default_must_be_json_serializable(self):
         self.assertRaises(TypeError, LocalSetting, default=object())
@@ -41,9 +40,9 @@ class TestLocalSetting(unittest.TestCase):
     def test_local_setting_with_validator(self):
         setting = LocalSetting(validator=lambda v: isinstance(v, int))
         with self.assertRaises(ValueError):
-            setting.value = 'abc'
+            setting.value = "abc"
         setting.value = 123
 
     def test_local_setting_with_callable_default(self):
-        setting = LocalSetting(default=lambda: 'pants')
-        self.assertEqual(setting.default, 'pants')
+        setting = LocalSetting(default=lambda: "pants")
+        self.assertEqual(setting.default, "pants")

@@ -17,11 +17,19 @@ from .util import get_default_file_names
 from .__main__ import make_local_settings  # noqa: exported
 
 
-__version__ = '1.0b12.dev0'
+__version__ = "2.0.dev0"
 
 
-def load_and_check_settings(base_settings, file_name=None, section=None, base_path=None,
-                            strategy_type=None, disable=None, prompt=None, quiet=None):
+def load_and_check_settings(
+    base_settings,
+    file_name=None,
+    section=None,
+    base_path=None,
+    strategy_type=None,
+    disable=None,
+    prompt=None,
+    quiet=None,
+):
     """Merge local settings from file with base settings, then check.
 
     Returns a new dict containing the base settings and the loaded
@@ -63,20 +71,21 @@ def load_and_check_settings(base_settings, file_name=None, section=None, base_pa
 
     """
     environ_config = get_config_from_environ()
-    disable = environ_config['disable'] if disable is None else disable
-    prompt = environ_config['prompt'] if prompt is None else prompt
-    quiet = environ_config['quiet'] if quiet is None else quiet
+    disable = environ_config["disable"] if disable is None else disable
+    prompt = environ_config["prompt"] if prompt is None else prompt
+    quiet = environ_config["quiet"] if quiet is None else quiet
     if disable:
         return {}
     if file_name is None:
         file_name = get_file_name()
     if file_name is None:
         cwd = os.getcwd()
-        default_file_names = ', '.join(get_default_file_names())
+        default_file_names = ", ".join(get_default_file_names())
         raise SettingsFileNotFoundError(
-            'No local settings file was specified and no default settings file was found in the '
-            'current working directory (cwd = {cwd}, defaults = {default_file_names})'
-            .format(**locals()))
+            f"No local settings file was specified and no default "
+            f"settings file was found in the current working directory "
+            f"(cwd = {cwd}, defaults = {default_file_names})"
+        )
     base_path = base_path or os.getcwd()
     file_name = abs_path(file_name, relative_to=base_path)
     try:
@@ -86,27 +95,28 @@ def load_and_check_settings(base_settings, file_name=None, section=None, base_pa
         # Loading/checking of local settings was aborted with Ctrl-C.
         # This isn't an error, but we don't want to continue.
         if not quiet:
-            printer.print_warning('\nAborted loading/checking of local settings')
+            printer.print_warning("\nAborted loading/checking of local settings")
         sys.exit(0)
     if loader.section:
-        file_name = '{loader.file_name}#{loader.section}'.format(loader=loader)
+        file_name = f"{loader.file_name}#{loader.section}"
     else:
         file_name = loader.file_name
     if not success:
         raise SettingsFileDidNotPassCheck(file_name)
     if not quiet:
-        printer.print_success('Settings loaded successfully from {0}'.format(file_name))
+        printer.print_success(f"Settings loaded successfully from {file_name}")
     return settings
 
 
 def get_config_from_environ():
-    def get(name, default='null'):
+    def get(name, default="null"):
         name = name.upper()
-        name = 'LOCAL_SETTINGS_CONFIG_{name}'.format(name=name)
+        name = f"LOCAL_SETTINGS_CONFIG_{name}"
         return json.loads(os.environ.get(name, default))
+
     options = (
-        ('disable', 'false'),
-        ('prompt', 'null'),
-        ('quiet', 'false'),
+        ("disable", "false"),
+        ("prompt", "null"),
+        ("quiet", "false"),
     )
     return {n: get(n, default) for (n, default) in options}

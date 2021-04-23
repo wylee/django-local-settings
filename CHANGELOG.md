@@ -1,8 +1,12 @@
 # Change Log for django-local-settings
 
-## 1.0b12 - unreleased
+## 2.0.0 - unreleased
 
-In progress...
+- Dropped support for Python versions less than 3.6
+- Dropped support for Django versions less than 2.2
+- Moving forward, only maintained Python and Django will be supported
+- Considered replace INI+JSON with TOML but found the latter has some
+  limitations
 
 ## 1.0b11 - 2019-11-21
 

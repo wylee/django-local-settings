@@ -1,0 +1,36 @@
+[tool.poetry]
+name = "django-local-settings"
+version = "2.0.dev0"
+description = "Define Django settings using TOML"
+authors = ["Wyatt Baldwin <self@wyattbaldwin.com>"]
+license = "MIT"
+repository = "https://github.com/wylee/django-local-settings"
+
+packages = [
+    { include = "local_settings", from = "src" }
+]
+
+include = [
+    "CHANGELOG.md",
+    "LICENSE",
+    "README.md",
+]
+
+[tool.poetry.dependencies]
+python = "^3.6"
+Django = "*"
+
+[tool.poetry.dev-dependencies]
+black = "*"
+"com.wyattbaldwin.make-release" = "*"
+coverage = "*"
+flake8 = "*"
+runcommands = "*"
+tox = "*"
+
+[tool.poetry.scripts]
+make-local-settings = "local_settings:make_local_settings"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

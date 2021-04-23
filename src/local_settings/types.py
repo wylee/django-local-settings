@@ -4,7 +4,7 @@ from .exc import NoDefaultError, NoValueError
 from .util import NO_DEFAULT
 
 
-class LocalSetting(object):
+class LocalSetting:
 
     """Used to mark settings that should be set in the local environment.
 
@@ -30,10 +30,10 @@ class LocalSetting(object):
                 try:
                     json.dumps(default)
                 except TypeError as exc:
-                    msg = (
-                        '{exc}\nDefault value for LocalSetting must be JSON '
-                        'serializable'.format(exc=exc))
-                    raise TypeError(msg)
+                    raise TypeError(
+                        f"{exc}\nDefault value for LocalSetting must "
+                        f"be JSON serializable"
+                    )
         self.prompt = prompt
         self.doc = doc
         self.validator = validator
@@ -60,7 +60,7 @@ class LocalSetting(object):
     def default(self):
         default = self._get_default()
         if default is NO_DEFAULT:
-            raise NoDefaultError('Local setting has no default value')
+            raise NoDefaultError("Local setting has no default value")
         return default
 
     @default.setter
@@ -73,13 +73,13 @@ class LocalSetting(object):
         if value is NO_DEFAULT:
             value = self._get_default()
         if value is NO_DEFAULT:
-            raise NoValueError('Local setting has no value')
+            raise NoValueError("Local setting has no value")
         return value
 
     @value.setter
     def value(self, value):
         if not self.validate(value):
-            raise ValueError('`{0}` is not a valid value'.format(value))
+            raise ValueError(f"`{value}` is not a valid value")
         self._value = value
 
     def validate(self, v):
@@ -88,16 +88,16 @@ class LocalSetting(object):
         return True
 
     def __str__(self):
+        class_name = self.__class__.__name__
         try:
             default = repr(self.default)
         except NoDefaultError:
-            default = '[NO DEFAULT VALUE]'
+            default = "[NO DEFAULT VALUE]"
         try:
             value = repr(self.value)
         except NoValueError:
-            value = '[NO VALUE SET]'
-        s = '<{0.__class__.__name__} with default `{default}` and value `{value}`>'
-        s = s.format(self, default=default, value=value)
+            value = "[NO VALUE SET]"
+        s = f"<{class_name} with default `{default}` and value `{value}`>"
         return s
 
 
@@ -112,4 +112,4 @@ class SecretSetting(LocalSetting):
     """
 
     def __init__(self, doc=None, validator=None):
-        super(SecretSetting, self).__init__(NO_DEFAULT, True, doc, validator)
+        super().__init__(NO_DEFAULT, True, doc, validator)

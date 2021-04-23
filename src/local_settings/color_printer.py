@@ -2,31 +2,27 @@ from __future__ import print_function
 
 import sys
 
-from six import add_metaclass
-
 from .util import is_a_tty
 
 
 class ColorPrinterMeta(type):
-
     def __init__(cls, *args, **kwargs):
         def _make_methods(_color):
             def _print(self, *a, **kw):
-                kw['color'] = _color
+                kw["color"] = _color
                 return self.print(*a, **kw)
 
             def _string(self, *a, **kw):
                 return self.string(_color, *a, **kw)
 
-            setattr(cls, 'print_{0}'.format(color), _print)
-            setattr(cls, 'string_{0}'.format(color), _string)
+            setattr(cls, f"print_{color}", _print)
+            setattr(cls, f"string_{color}", _string)
 
         for color in cls.colors:
             _make_methods(color)
 
 
-@add_metaclass(ColorPrinterMeta)
-class ColorPrinter(object):
+class ColorPrinter(metaclass=ColorPrinterMeta):
 
     """Prints things in color (or not).
 
@@ -58,13 +54,13 @@ class ColorPrinter(object):
     """
 
     colors = {
-        'header': '\033[95m',
-        'info': '\033[94m',
-        'success': '\033[92m',
-        'warning': '\033[93m',
-        'error': '\033[91m',
-        'reset': '\033[0m',
-        'none': '',
+        "header": "\033[95m",
+        "info": "\033[94m",
+        "success": "\033[92m",
+        "warning": "\033[93m",
+        "error": "\033[91m",
+        "reset": "\033[0m",
+        "none": "",
     }
 
     def __init__(self, colors=None):
@@ -80,8 +76,8 @@ class ColorPrinter(object):
         without color.
 
         """
-        color = kwargs.pop('color', None)
-        file = kwargs.get('file', sys.stdout)
+        color = kwargs.pop("color", None)
+        file = kwargs.get("file", sys.stdout)
         if color and is_a_tty(file):
             string = self.string(color, *args, **kwargs)
             print(string, **kwargs)
@@ -96,12 +92,10 @@ class ColorPrinter(object):
 
         """
         color = self.colors[color]
-        sep = kwargs.get('sep', ' ')
-        end = kwargs.get('end', '')
-        template = '{color}{string}{reset}'
+        sep = kwargs.get("sep", " ")
+        end = kwargs.get("end", "")
         string = sep.join(str(a) for a in args)
-        string = template.format(
-            color=color, string=string, reset=self.colors['reset'])
+        string = f"{color}{string}{self.colors['reset']}"
         if end:
             string += end
         return string
