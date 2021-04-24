@@ -1,6 +1,6 @@
 # Change Log for django-local-settings
 
-## 2.0.0 - unreleased
+## 2.0a1 - 2021-04-23
 
 - Dropped support for Python versions less than 3.6
 - Dropped support for Django versions less than 2.2
