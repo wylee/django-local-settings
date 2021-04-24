@@ -58,12 +58,11 @@ prompted for in the console* (with pretty colors and readline support).
 
 ## Basic usage
 
-- At the top of your project's settings module, import the
-  `load_and_check_settings` function along with the types of settings
-  you need:
+- In your project's settings *module*, import the `inject_settings`
+  function along with the types of settings you need:
 
         from local_settings import (
-            load_and_check_settings,
+            inject_settings,
             LocalSetting,
             SecretSetting,
         )
@@ -92,31 +91,25 @@ prompted for in the console* (with pretty colors and readline support).
     setting will be replaced with the `PACKAGE` setting, so that its
     default value is effectively `'top_level_package'`.
 
-- After all the local settings are defined, add the following lines:
+- *After* all the local settings are defined, add the following line:
 
-        _settings = load_and_check_settings(globals())
-        globals().update(_settings)
+        inject_settings()
 
-    These two lines merge the project's local settings into the settings
-    module's namespace. Passing `globals()` initializes the local
-    settings loader with base settings (e.g., `PACKAGE` in the example
-    above) and by "telling" it which settings are local settings.
+    This initializes the local settings loader with the base settings
+    from the settings *module* and tells it which settings are local
+    settings. It then merges in the settings from the settings *file*.
 
-    `load_and_check_settings()` loads the project's local settings from
-    a file (`$PWD/local.cfg` by default), prompting for any that are
-    missing, and returns a new dictionary with local settings merged
-    over any base settings. When not running on a TTY/console, missing
-    local settings will cause an exception to be raised.
+    `inject_settings()` loads the project's local settings from a file
+    (`$CWD/local.cfg` by default), prompting for any that are missing,
+    and returns a new dictionary with local settings merged over any
+    base settings. When not running on a TTY/console, missing local
+    settings will cause an exception to be raised.
 
-    `globals().update(_settings)` merges all of the settings into the
-    settings module's namespace. After this line runs, you will be able
-    to use the local settings just like any other settings. For example,
-    you could do `if DEBUG: ...`; at this point, `DEBUG` is no longer a
-    `LocalSetting` instance--it's a regular old bool.
-
-    Note: You could just write
-    `globals().update(load_and_check_settings(globals()))`. The spelling
-    above is just intended to make it more clear what's happening.
+    After `inject_settings()` runs, you'll be able to access the local
+    settings in the settings module as usual, in case some dynamic
+    configuration is required. For example, you could do `if DEBUG:
+    ...`. At this point, `DEBUG` is no longer a `LocalSetting`
+    instance--it's a regular bool.
 
 - Now you can run any `manage.py` command, and you will be prompted to
   enter any missing local settings. On the first run, the settings file

@@ -1,3 +1,4 @@
+import inspect
 import json
 import os
 import sys
@@ -106,6 +107,29 @@ def load_and_check_settings(
     if not quiet:
         printer.print_success(f"Settings loaded successfully from {file_name}")
     return settings
+
+
+def inject_settings(base_settings=None, **kwargs):
+    """Inject local settings into settings module.
+
+    Call this from the global scope of your Django settings module to
+    load settings from the local settings file and inject them into the
+    settings module::
+
+        from local_settings import inject_settings
+        inject_settings()
+
+    This is equivalent to, but much less tedious than, the following::
+
+        from local_settings import load_and_check_settings
+        globals.update(load_and_check_settings(globals()))
+
+    """
+    if base_settings is None:
+        frame = inspect.stack()[1][0]
+        base_settings = frame.f_globals
+    settings = load_and_check_settings(base_settings, **kwargs)
+    base_settings.update(settings)
 
 
 def get_config_from_environ():
