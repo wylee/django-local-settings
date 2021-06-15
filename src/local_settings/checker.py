@@ -3,7 +3,7 @@ from collections import Mapping, Sequence
 
 from .base import Base
 from .color_printer import color_printer as printer
-from .types import LocalSetting
+from .types import EnvSetting, LocalSetting, SecretSetting
 from .util import NO_DEFAULT, is_a_tty
 
 
@@ -47,7 +47,16 @@ class Checker(Base):
             )
         if missing:
             for name, local_setting in missing.items():
-                printer.print_error(f"Local setting `{name}` must be set")
+                if isinstance(local_setting, EnvSetting):
+                    message = (
+                        f"Env setting `{name}` must be set in settings "
+                        f"file or environ ({local_setting.name})"
+                    )
+                elif isinstance(local_setting, SecretSetting):
+                    message = f"Secrete setting `{name}` must be set"
+                else:
+                    message = f"Local setting `{name}` must be set"
+                printer.print_error(message)
             return False
         return True
 
@@ -94,9 +103,6 @@ class Checker(Base):
                             settings_to_write,
                             missing,
                         )
-
-                if self.prompt:
-                    printer.print_header("=" * 79)
 
                 if local_setting.prompt:  # prompt for value
                     if self.prompt:
