@@ -1,10 +1,12 @@
 [tool.poetry]
 name = "django-local-settings"
 version = "2.0.dev0"
-description = "Define Django settings using TOML"
+description = "Define Django settings in config files and/or via environment variables"
 authors = ["Wyatt Baldwin <self@wyattbaldwin.com>"]
 license = "MIT"
 repository = "https://github.com/wylee/django-local-settings"
+readme = "README.md"
+keywords = ["django", "settings", "local", "env", "environment"]
 
 packages = [
     { include = "local_settings", from = "src" }
