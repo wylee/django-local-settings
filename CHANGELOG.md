@@ -1,5 +1,9 @@
 # Change Log for django-local-settings
 
+## 2.0 - unreleased
+
+In progress...
+
 ## 2.0a4 - 2021-06-14
 
 - Tweak package metadata in `pyproject.toml`; in particular, specify the
