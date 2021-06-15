@@ -95,9 +95,6 @@ class Checker(Base):
                             missing,
                         )
 
-                if self.prompt:
-                    printer.print_header("=" * 79)
-
                 if local_setting.prompt:  # prompt for value
                     if self.prompt:
                         v, is_set = self.prompt_for_value(name, v)
