@@ -16,11 +16,14 @@ def lint():
 def test(with_coverage=True, check=True):
     if with_coverage:
         _local(
-            "coverage run --source local_settings -m unittest discover "
+            "coverage run "
+            "--source src/local_settings "
+            "-m unittest discover "
+            "-t . -s tests "
             "&& coverage report"
         )
     else:
-        _local("python -m unittest discover")
+        _local("python -m unittest discover -t . -s tests")
     if check:
         format_code(check=True)
         lint()
