@@ -1,12 +1,19 @@
 # Change Log for django-local-settings
 
-## 2.0 - unreleased
+## 2.0a3 - 2021-06-14
 
-In progress...
+- Fixed specification of minimum Django version in `pyproject.toml`
+- Added changes to CHANGELOG for 2.0a2
 
 ## 2.0a2 - 2021-06-14
 
-In progress...
+- Added support for env settings, which are settings that have their
+  values loaded from environment variables; if a `.env` file is present,
+  environment variables will be loaded from it automatically
+- Changed secret settings so they can specify a default as long as it's
+  a callable; this is convenient while discouraging use of the same
+  secret value in different environments
+- Made some other improvements to the initial 2.0 alpha release
 
 ## 2.0a1 - 2021-04-23
 
