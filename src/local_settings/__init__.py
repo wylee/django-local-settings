@@ -3,18 +3,16 @@ import json
 import os
 import sys
 
-import dotenv
-
 from .color_printer import color_printer as printer
 from .exc import LocalSettingsError, SettingsFileDidNotPassCheck
 from .loader import Loader
-from .util import abs_path, get_file_name
+from .util import abs_path, get_file_name, load_dotenv
 
 # Exported (but unused locally)
 from .checker import Checker  # noqa: exported
 from .exc import SettingsFileNotFoundError  # noqa: exported
 from .settings import Settings  # noqa: exported
-from .types import LocalSetting, SecretSetting  # noqa: exported
+from .types import EnvSetting, LocalSetting, SecretSetting  # noqa: exported
 from .util import NO_DEFAULT  # noqa: exported
 from .util import get_default_file_names
 from .__main__ import make_local_settings  # noqa: exported
@@ -34,6 +32,7 @@ def load_and_check_settings(
     quiet=None,
     env_only=False,
     dotenv_file=None,
+    dotenv_file_name=".env",
 ):
     """Merge local settings from file with base settings, then check.
 
@@ -93,7 +92,7 @@ def load_and_check_settings(
     See :meth:`.Loader.load` and :meth:`.Checker.check` for more info.
 
     """
-    environ_config = get_config_from_environ(base_path, dotenv_file)
+    environ_config = get_config_from_environ(dotenv_file, base_path, dotenv_file_name)
     disable = environ_config["disable"] if disable is None else disable
     if disable:
         return {}
@@ -179,15 +178,13 @@ def inject_settings(base_settings=None, **kwargs):
     base_settings.update(settings)
 
 
-def get_config_from_environ(base_path, dotenv_file):
+def get_config_from_environ(dotenv_file, base_path, file_name=".env"):
     def get(name, default="null"):
         name = name.upper()
         name = f"LOCAL_SETTINGS_CONFIG_{name}"
         return json.loads(os.environ.get(name, default))
 
-    dotenv_file = abs_path(dotenv_file, base_path)
-    dotenv.load_dotenv(dotenv_file)
-
+    load_dotenv(dotenv_file, base_path, file_name)
     options = (
         ("disable", "false"),
         ("prompt", "null"),

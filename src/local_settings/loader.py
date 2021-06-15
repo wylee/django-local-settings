@@ -1,8 +1,6 @@
 import os
 from collections import Mapping, MutableMapping, MutableSequence, Sequence
 
-import dotenv
-
 from django.utils.module_loading import import_string
 
 from .base import Base
@@ -10,7 +8,7 @@ from .checker import Checker
 from .settings import DottedAccessDict, Settings
 from .strategy import RawValue
 from .types import EnvSetting, LocalSetting
-from .util import abs_path
+from .util import load_dotenv
 
 
 class Loader(Base):
@@ -85,8 +83,7 @@ class Loader(Base):
 
         # Load .env file, if present
         dotenv_path = settings.get("DOTENV_PATH")
-        dotenv_path = abs_path(dotenv_path) if dotenv_path else None
-        dotenv.load_dotenv(dotenv_path)
+        load_dotenv(dotenv_path)
 
         # At this point, some or all env settings *might* have been set
         # from a local settings file. Now we need to go through and set
@@ -119,6 +116,8 @@ class Loader(Base):
 
     def _interpolate_values(self, obj, settings):
         def inject(_name, value):
+            if not isinstance(value, str):
+                return value
             new_value, changed = self._inject(value, settings)
             if changed:
                 if isinstance(value, RawValue):

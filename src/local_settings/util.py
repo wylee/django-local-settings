@@ -2,6 +2,8 @@ import importlib
 import io
 import os
 
+import dotenv
+
 
 NO_DEFAULT = type(
     "NO_DEFAULT",
@@ -141,6 +143,29 @@ def asset_path(path):
     path = os.path.normpath(path)
 
     return path
+
+
+def dotenv_path(path=None, relative_to=None, file_name=".env"):
+    """Get .env path.
+
+    If a path is specified, convert it to an absolute path. Otherwise,
+    use the default, "./.env".
+
+    .. note:: By default, the dotenv package discovers the default .env
+        file relative to the call site, so we have to tell it use CWD.
+
+    """
+    if path:
+        path = abs_path(path, relative_to)
+    else:
+        path = dotenv.find_dotenv(filename=file_name, usecwd=True)
+    return path
+
+
+def load_dotenv(path=None, relative_to=None, file_name=".env"):
+    """Load vars from dotenv file into environ."""
+    path = dotenv_path(path, relative_to, file_name)
+    dotenv.load_dotenv(path)
 
 
 # These TTY functions were copied from Invoke
