@@ -1,8 +1,10 @@
 # Change Log for django-local-settings
 
-## 2.0 - unreleased
+## 2.0a4 - 2021-06-14
 
-In progress...
+- Tweak package metadata in `pyproject.toml`; in particular, specify the
+  README file so it will show up on PyPI; fix description and add
+  keywords too
 
 ## 2.0a3 - 2021-06-14
 
