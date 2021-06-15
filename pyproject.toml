@@ -13,6 +13,7 @@ packages = [
 ]
 
 include = [
+    "docs/*",
     "CHANGELOG.md",
     "LICENSE",
     "README.md",
@@ -29,6 +30,7 @@ black = "*"
 coverage = "*"
 flake8 = "*"
 runcommands = "*"
+sphinx = "*"
 tox = "*"
 
 [tool.poetry.scripts]
