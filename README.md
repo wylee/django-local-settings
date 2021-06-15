@@ -1,5 +1,17 @@
 # Local settings for Django projects
 
+## New in version 2
+
+- Settings can now be defined as environment variables (env settings)
+- The values for env settings can be specified in a `.env` file and
+  they'll be loaded automatically, or any standard method of setting
+  environment variables can be used
+- Secret settings can now have a callable default (they weren't allowed
+  to have a default before)
+- Support for Python 3.5 and below was dropped; supporting only 3.6 and
+  up is much simpler
+- Support for old, unsupported versions of Django was dropped
+
 This package attempts to solve the problem of handling local settings in
 Django projects. Local settings by definition can't be pre-defined,
 although perhaps they can have a reasonable default value (mainly useful
@@ -37,11 +49,29 @@ values are JSON encoded. The reasoning behind this is to use a simple,
 standard config file format while still allowing for easy handling of
 non-string settings.
 
+In addition, interpolation is supported using Django-style `{{ ... }}`
+syntax. This can be handy to avoid repetition.
+
 Once the local settings are defined, *any missing settings will be
 prompted for in the console* (with pretty colors and readline support).
 
+In addition to settings files, settings can defined via environment
+variables. These can be defined in a `.env` file or using any other
+mechanism for setting environment variables. When using a `.env` file,
+the values will be read in automatically; when *not* using a `.env`
+file, the corresponding environment variables will need to be set prior
+to loading the local settings.
+
+Env settings are typically strings like passwords and API tokens, but
+they will proccessed like other settings--values will be loaded as JSON
+and interpolated, etc.
+
 ## Features
 
+- Local settings can be defined in a settings file (or files) *or* as
+  environment variables (AKA env settings)
+- When using env settings, environment variables will be loaded from
+  a `.env` file automatically, if present
 - Missing local settings will be prompted for (only when running on a
   TTY/console)
 - Local settings can be defined with validators
@@ -69,8 +99,21 @@ prompted for in the console* (with pretty colors and readline support).
 
 - Then define some base settings and local settings:
 
-        PACKAGE = "top_level_package_name"
+        # project/settings.py
+        from django.core.management import utils
+
+        # This is used to demonstrate interpolation.
+        PACKAGE = "local_settings"
+  
         DEBUG = LocalSetting(default=False)
+  
+        # This setting will be loaded from the environment variable
+        # API_TOKEN, which can be defined in a .env file or set directly
+        # in the environment.
+        SOME_SERVICE = {
+            "api_token": EnvSetting("API_TOKEN"),
+        }
+  
         DATABASES = {
             "default": {
                 "ENGINE": "django.db.backends.postgresql",
@@ -81,11 +124,19 @@ prompted for in the console* (with pretty colors and readline support).
                 "PORT": "",
             },
         }
-        SECRET_KEY = SecretSetting(doc="The secret key for doing secret stuff")
+  
+        # If a secret setting specifies a default, it must be a callable
+        # that generates the value; this discourages using the same
+        # secret in different environments.
+        SECRET_KEY = SecretSetting(
+            default=utils.get_random_secret_key,
+            doc="The secret key for doing secret stuff",
+        )
 
-    As you can see, local settings can be defined anywhere within the
-    definition of a top level setting. They can also have doc strings,
-    which are displayed when prompting.
+    Local settings can be nested inside other settings. They can also
+    have doc strings, which are displayed when prompting, and default
+    values or value generators, which are used as suggestions when
+    prompting.
 
     This also demonstrates interpolation. The `DATABASES.default.NAME`
     setting will be replaced with the `PACKAGE` setting, so that its
@@ -101,15 +152,16 @@ prompted for in the console* (with pretty colors and readline support).
 
     `inject_settings()` loads the project's local settings from a file
     (`$CWD/local.cfg` by default), prompting for any that are missing,
-    and returns a new dictionary with local settings merged over any
-    base settings. When not running on a TTY/console, missing local
-    settings will cause an exception to be raised.
+    and/or environment variables, and returns a new dictionary with
+    local settings merged over any base settings. When not running on
+    a TTY/console, missing local settings will cause an exception to be
+    raised.
 
     After `inject_settings()` runs, you'll be able to access the local
     settings in the settings module as usual, in case some dynamic
     configuration is required. For example, you could do `if DEBUG:
     ...`. At this point, `DEBUG` is no longer a `LocalSetting`
-    instance--it's a regular bool.
+    instance--it's a regular Python `bool`.
 
 - Now you can run any `manage.py` command, and you will be prompted to
   enter any missing local settings. On the first run, the settings file
