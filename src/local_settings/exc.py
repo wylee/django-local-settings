@@ -31,3 +31,8 @@ class NoDefaultError(LocalSettingsError):
 class NoValueError(LocalSettingsError):
 
     pass
+
+
+class DefaultValueError(LocalSettingsError, ValueError):
+
+    pass

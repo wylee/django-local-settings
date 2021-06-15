@@ -1,6 +1,6 @@
 import json
 
-from .exc import NoDefaultError, NoValueError
+from .exc import NoDefaultError, NoValueError, DefaultValueError
 from .util import NO_DEFAULT
 
 
@@ -105,14 +105,22 @@ class SecretSetting(LocalSetting):
 
     """Used to mark secret settings.
 
-    Secret settings have no default and should never be stored in
-    version control. They will always be prompted for if not present in
-    the local settings file.
+    Secret settings should never be stored in version control. They will
+    always be prompted for if not present in the local settings file.
+
+    Secret settings can have a default generator, which *must* be a
+    callable. This is to discourage reuse of the same secret value in
+    different environments.
 
     """
 
-    def __init__(self, doc=None, validator=None):
-        super().__init__(NO_DEFAULT, True, doc, validator)
+    def __init__(self, default=NO_DEFAULT, doc=None, validator=None):
+        if default is not NO_DEFAULT and not callable(default):
+            raise DefaultValueError(
+                "The default for a secret setting must be a callable; "
+                f"got {default!r} of type {type(default)}"
+            )
+        super().__init__(default, True, doc, validator)
 
 
 class EnvSetting(LocalSetting):
