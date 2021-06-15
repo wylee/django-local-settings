@@ -3,7 +3,7 @@ import sys
 import unittest
 
 from local_settings.loader import Loader
-from local_settings.types import LocalSetting
+from local_settings.types import EnvSetting, LocalSetting
 
 
 LOCAL_SETTINGS_FILE = os.path.join(os.path.dirname(__file__), "local.cfg#test")
@@ -22,10 +22,14 @@ class TestLoading(unittest.TestCase):
         self.assertEqual(local_setting.default, "default value")
         self.assertEqual(local_setting.value, "default value")
 
+        env_setting = EnvSetting("TEST_ENV_SETTING")
+        os.environ["TEST_ENV_SETTING"] = "{{ PACKAGE }}"
+
         settings = self.loader.load(
             {
                 "BASE_SETTING": "{{ PACKAGE }}",
                 "LOCAL_SETTING": local_setting,
+                "ENV_SETTING": env_setting,
                 "TUPLE_SETTING": ("a", "b", "c"),
                 "LIST_SETTING": ["a", "b", "c"],
                 "DICT_SETTING": {"a": "b"},
@@ -43,6 +47,7 @@ class TestLoading(unittest.TestCase):
         expected = {
             "BASE_SETTING": "local_settings",
             "LOCAL_SETTING": "local value",
+            "ENV_SETTING": "local_settings",
             "TUPLE_SETTING": ("a", "b", "c"),
             "LIST_SETTING": ["a", "b", "c"],
             "DICT_SETTING": {"a": "b"},

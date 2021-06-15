@@ -113,3 +113,40 @@ class SecretSetting(LocalSetting):
 
     def __init__(self, doc=None, validator=None):
         super().__init__(NO_DEFAULT, True, doc, validator)
+
+
+class EnvSetting(LocalSetting):
+
+    """Setting fetched from environ.
+
+    Env settings can have a default set in the local settings file,
+    which will be overridden if the specified environment variable is
+    set.
+
+    Env settings can also be used standalone without a local settings
+    file.
+
+    Example::
+
+        # settings.py
+        #
+        # This setting will be pulled from the ENV_SETTING environment
+        # variable.
+        ENV_SETTING = EnvSetting("ENV_SETTING")
+
+    Env settings can be nested too::
+
+        # settings.py
+        DATABASES = {
+            "default": {
+                "USER": EnvSetting("DATABASE_USER"),
+                "PASSWORD": EnvSetting("DATABASE_PASSWORD"),
+                "NAME": EnvSetting("DATABASE_NAME"),
+            }
+        }
+
+    """
+
+    def __init__(self, name, doc=None, validator=None):
+        super().__init__(NO_DEFAULT, False, doc, validator)
+        self.name = name

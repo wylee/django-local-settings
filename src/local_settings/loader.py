@@ -1,4 +1,7 @@
+import os
 from collections import Mapping, MutableMapping, MutableSequence, Sequence
+
+import dotenv
 
 from django.utils.module_loading import import_string
 
@@ -6,7 +9,8 @@ from .base import Base
 from .checker import Checker
 from .settings import DottedAccessDict, Settings
 from .strategy import RawValue
-from .types import LocalSetting
+from .types import EnvSetting, LocalSetting
+from .util import abs_path
 
 
 class Loader(Base):
@@ -54,7 +58,10 @@ class Loader(Base):
         base_settings = DottedAccessDict((k, base_settings[k]) for k in valid_keys)
 
         # Settings read from the settings file; values are unprocessed.
-        settings_from_file = self.strategy.read_file(self.file_name, self.section)
+        if self.file_name is not None:
+            settings_from_file = self.strategy.read_file(self.file_name, self.section)
+        else:
+            settings_from_file = {}
 
         # The fully resolved settings.
         settings = Settings(base_settings)
@@ -76,6 +83,25 @@ class Loader(Base):
             if isinstance(current_value, LocalSetting):
                 self.registry[current_value] = name
 
+        # Load .env file, if present
+        dotenv_path = settings.get("DOTENV_PATH")
+        dotenv_path = abs_path(dotenv_path) if dotenv_path else None
+        dotenv.load_dotenv(dotenv_path)
+
+        # At this point, some or all env settings *might* have been set
+        # from a local settings file. Now we need to go through and set
+        # any env settings that have a value set in the environment.
+        # This is similar to loading settings from a file.
+        def env_action(n, v):
+            if isinstance(v, EnvSetting) and v.name in os.environ:
+                self.registry[v] = n
+                env_value = os.environ[v.name]
+                settings.set_dotted(n, env_value)
+                return env_value
+            return v
+
+        self._traverse_object(None, base_settings, action=env_action)
+
         self._interpolate_values(settings, settings)
         self._interpolate_keys(settings, settings)
         self._prepend_extras(settings, settings.pop("PREPEND", None))
@@ -92,7 +118,7 @@ class Loader(Base):
     # Post-processing
 
     def _interpolate_values(self, obj, settings):
-        def inject(value):
+        def inject(_name, value):
             new_value, changed = self._inject(value, settings)
             if changed:
                 if isinstance(value, RawValue):
@@ -102,38 +128,42 @@ class Loader(Base):
 
         while True:
             interpolated = []
-            obj = self._traverse_object(obj, action=inject)
+            obj = self._traverse_object(None, obj, action=inject)
             if not interpolated:
                 break
 
-        def decode(value):
+        def decode(_name, value):
             if isinstance(value, RawValue):
                 value = self.strategy.decode_value(value)
             return value
 
-        return self._traverse_object(obj, action=decode)
+        return self._traverse_object(None, obj, action=decode)
 
-    def _traverse_object(self, obj, action):
-        if isinstance(obj, str):
-            obj = action(obj)
+    def _traverse_object(self, name, obj, action):
+        if isinstance(obj, (str, LocalSetting)):
+            obj = action(name, obj)
         elif isinstance(obj, MutableMapping):
             for k, v in obj.items():
-                v = self._traverse_object(v, action)
+                n = f"{name}.{k}" if name else k
+                v = self._traverse_object(n, v, action)
                 obj[k] = v
         elif isinstance(obj, Mapping):
             items = []
             for k, v in obj.items():
-                v = self._traverse_object(v, action)
+                n = f"{name}.{k}" if name else k
+                v = self._traverse_object(n, v, action)
                 items.append((k, v))
             obj = obj.__class__(items)
         elif isinstance(obj, MutableSequence):
             for i, v in enumerate(obj):
-                v = self._traverse_object(v, action)
+                n = f"{name}.{i}" if name else str(i)
+                v = self._traverse_object(n, v, action)
                 obj[i] = v
         elif isinstance(obj, Sequence):
             items = []
-            for v in obj:
-                v = self._traverse_object(v, action)
+            for i, v in enumerate(obj):
+                n = f"{name}.{i}" if name else str(i)
+                v = self._traverse_object(n, v, action)
                 items.append(v)
             obj = obj.__class__(items)
         return obj

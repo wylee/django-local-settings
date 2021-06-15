@@ -19,6 +19,7 @@ include = [
 [tool.poetry.dependencies]
 python = "^3.6"
 Django = "*"
+python-dotenv = "*"
 
 [tool.poetry.dev-dependencies]
 black = "*"
