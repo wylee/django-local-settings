@@ -109,6 +109,7 @@ class Checker(Base):
                         v, is_set = self.prompt_for_value(name, v)
                 elif local_setting.has_default:  # use default w/o prompting
                     v, is_set = local_setting.default, True
+                    v = self.strategy.encode_value(v)
                     msg = f"Using default value `{v!r}` for local " f"setting `{name}`"
                     if local_setting.derived_default:
                         msg += f" (derived from {default_name})"
@@ -138,7 +139,7 @@ class Checker(Base):
             v = input("> ").strip()
             if v:
                 try:
-                    v = self.strategy.decode_value(v)
+                    self.strategy.decode_value(v)
                 except ValueError as e:
                     printer.print_error(e)
                 else:
@@ -147,6 +148,7 @@ class Checker(Base):
                         printer.print_error(f"`{v}` is not a valid value for {name}")
             elif local_setting.has_default:
                 v, is_set = local_setting.default, True
+                v = self.strategy.encode_value(v)
                 printer.print_info(f"Using default value for `{name}`")
             else:
                 printer.print_error(f"You must enter a value for `{name}`")

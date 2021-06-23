@@ -6,6 +6,7 @@ from abc import ABCMeta, abstractmethod
 from configparser import NoSectionError, RawConfigParser
 
 from .exc import SettingsFileNotFoundError, SettingsFileSectionNotFoundError
+from .json import JSONDecoder
 from .util import parse_file_name_and_section
 
 
@@ -237,8 +238,7 @@ class INIStrategy(Strategy):
             parser.add_section(section)
         sorted_keys = sorted(settings.keys())
         for name in sorted_keys:
-            value = self.encode_value(settings[name])
-            settings[name] = value
+            value = settings[name]
             parser[section][name] = value
         with open(file_name, "w") as fp:
             parser.write(fp)
@@ -276,9 +276,10 @@ class INIJSONStrategy(INIStrategy):
         if not value:
             return None
         try:
-            value = json.loads(value)
+            value = JSONDecoder.loads(value)
         except ValueError:
-            raise ValueError(f"Could not parse `{value}` as JSON")
+            value = value.replace("\n", " ")
+            raise ValueError(f"Could not parse `{value}` as JSON, number, or datetime")
         return value
 
     def encode_value(self, value):

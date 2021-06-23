@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "django-local-settings"
-version = "2.0a4"
+version = "2.0a5"
 description = "Define Django settings in config files and/or via environment variables"
 authors = ["Wyatt Baldwin <self@wyattbaldwin.com>"]
 license = "MIT"
@@ -13,6 +13,7 @@ packages = [
 ]
 
 include = [
+    "docs/*",
     "CHANGELOG.md",
     "LICENSE",
     "README.md",
@@ -20,6 +21,7 @@ include = [
 
 [tool.poetry.dependencies]
 python = "^3.6"
+arrow = "^1.1.0"
 Django = ">=2.2"
 python-dotenv = "^0.17.1"
 
@@ -29,6 +31,7 @@ black = "*"
 coverage = "*"
 flake8 = "*"
 runcommands = "*"
+sphinx = "*"
 tox = "*"
 
 [tool.poetry.scripts]

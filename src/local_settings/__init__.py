@@ -1,7 +1,7 @@
 import inspect
-import json
 import os
 import sys
+from json import loads
 
 from .color_printer import color_printer as printer
 from .exc import LocalSettingsError, SettingsFileDidNotPassCheck
@@ -18,7 +18,7 @@ from .util import get_default_file_names
 from .__main__ import make_local_settings  # noqa: exported
 
 
-__version__ = "2.0a4"
+__version__ = "2.0a5"
 
 
 def load_and_check_settings(
@@ -182,7 +182,7 @@ def get_config_from_environ(dotenv_file, base_path, file_name=".env"):
     def get(name, default="null"):
         name = name.upper()
         name = f"LOCAL_SETTINGS_CONFIG_{name}"
-        return json.loads(os.environ.get(name, default))
+        return loads(os.environ.get(name, default))
 
     load_dotenv(dotenv_file, base_path, file_name)
     options = (
