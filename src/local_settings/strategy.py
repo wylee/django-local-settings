@@ -271,15 +271,94 @@ class INIJSONStrategy(INIStrategy):
 
     file_types = ("cfg",)
 
-    def decode_value(self, value):
+    def decode_value(self, value, remove_trailing_commas=True):
         value = value.strip()
         if not value:
             return None
         try:
             value = json.loads(value)
         except ValueError:
+            if remove_trailing_commas:
+                try:
+                    new_value = self._remove_trailing_commas(value)
+                except ValueError:
+                    pass
+                else:
+                    if new_value != value:
+                        return self.decode_value(new_value, False)
+            value = value.replace("\n", " ")
             raise ValueError(f"Could not parse `{value}` as JSON")
         return value
+
+    def _remove_trailing_commas(self, value):
+        """Remove trailing commas from JSON values.
+
+        This is used only when the original value wasn't parsed
+        successfully as JSON.
+
+        Examples::
+
+            >>> strategy = INIJSONStrategy()
+            >>> strategy._remove_trailing_commas('""')
+            '""'
+            >>> strategy._remove_trailing_commas('1')
+            '1'
+            >>> strategy._remove_trailing_commas('"abc"')
+            '"abc"'
+            >>> strategy._remove_trailing_commas("[1, 2, 3]")
+            '[1, 2, 3]'
+            >>> strategy._remove_trailing_commas("[1, 2, 3,]")
+            '[1, 2, 3]'
+            >>> strategy._remove_trailing_commas('{"a": 1, "b": 2}')
+            '{"a": 1, "b": 2}'
+            >>> strategy._remove_trailing_commas('{"a": 1, "b": 2,}')
+            '{"a": 1, "b": 2}'
+            >>> strategy._remove_trailing_commas('["\\\\"a", "b"]')
+            '["\\\\"a", "b"]'
+
+        """
+        first_char = value[0]
+        if first_char not in "{[":
+            return value
+
+        stack = []
+        collector = []
+        in_string = False
+        pairs = {"{": "}", "[": "]"}
+        opening = None
+        closing = None
+
+        # Previous non-whitespace index & char
+        prev = None, None
+
+        for i, c in enumerate(value):
+            if c == '"' and prev[1] != "\\":
+                in_string = not in_string
+            elif not in_string:
+                if c.isspace():
+                    collector.append(c)
+                    continue
+                elif c in pairs:
+                    opening = c
+                    closing = pairs[c]
+                    stack.append(opening)
+                elif c == closing:
+                    if stack and stack[-1] == opening:
+                        stack.pop()
+                        if stack:
+                            opening = stack[-1]
+                            closing = pairs[opening]
+                        else:
+                            opening = None
+                            closing = None
+                        prev_i, prev_c = prev
+                        if prev_c == ",":
+                            collector[prev_i] = None
+                    else:
+                        raise ValueError(f"Mismatched {closing}")
+            collector.append(c)
+            prev = i, c
+        return "".join(c for c in collector if c)
 
     def encode_value(self, value):
         return json.dumps(value)

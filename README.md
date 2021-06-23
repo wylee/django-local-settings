@@ -8,6 +8,7 @@
   environment variables can be used
 - Secret settings can now have a callable default (they weren't allowed
   to have a default before)
+- List and dict settings can now have trailing commas
 - Support for Python 3.5 and below was dropped; supporting only 3.6 and
   up is much simpler
 - Support for old, unsupported versions of Django was dropped
