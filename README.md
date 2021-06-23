@@ -180,3 +180,29 @@ and interpolated, etc.
 TODO: Discuss using multiple settings files, extending a settings file
 from another file, how to specify a settings file other than the default
 of `local.cfg`, editing settings files directly, &c.
+
+## Historical note
+
+The initial commit of this package was made on October 22, 2014, and the
+first release was published to
+[PyPI](https://pypi.org/project/django-local-settings/) on March 11,
+2015. At the time,  I didn't know about TOML. Otherwise, I probably
+(maybe?) would have found a way to use TOML for Django settings.
+
+When I heard about TOML--I think related to `pyproject.toml` becoming
+a thing--I remember thinking it was quite similar to this package (or
+vice versa), especially the splitting of dotted names into dictionaries
+and the use of "rich" values rather than plain text.
+
+One of the biggest differences, besides this package being Django-
+specific, is interpolation of both values *and* keys, which I find
+immensely useful (more for values, but occasionally for keys.)
+
+Another difference is that with TOML the config file section name
+becomes part of the dictionary structure, whereas in
+`django-local-settings` it doesn't. In that regard,
+`django-local-settings` is geared toward environments, such as
+a development and production.
+
+One other difference is that `django-local-settings` supports loading
+settings from environment variables out of the box.
