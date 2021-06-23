@@ -1,5 +1,9 @@
 # Change Log for django-local-settings
 
+## 2.0 - unreleased
+
+In progress...
+
 ## 2.0a5 - 2021-06-23
 
 - Added support for trailing commas in list and dict settings. This
