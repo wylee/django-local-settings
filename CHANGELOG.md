@@ -1,8 +1,14 @@
 # Change Log for django-local-settings
 
-## 2.0 - unreleased
+## 2.0a5 - 2021-06-23
 
-In progress...
+- Added support for trailing commas in list and dict settings. This
+  makes for consistency, nicer diffs, easier copy/paste from Python
+  code, etc.
+- Added support for additional number formats in settings. Any valid
+  Python `int` or `float` will now work.
+- Added support for literal date and time settings, similar to TOML.
+- Added initial Sphinx doc setup. Still need to actually write docs...
 
 ## 2.0a4 - 2021-06-14
 
