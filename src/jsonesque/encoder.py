@@ -1,7 +1,6 @@
 """JSONesque Encoder
 
-For now, this just passes through to the stdlib
-:class:`json.JSONEncoder` and :func:`json.dumps`.
+For now, this just passes through to the stdlib :func:`json.dumps`.
 
 """
 import json

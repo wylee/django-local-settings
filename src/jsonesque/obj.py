@@ -7,8 +7,8 @@ class JSONObject(types.SimpleNamespace):
     JSON objects will be converted to this type by default.
 
     .. note:: In cases where you generally need/want to work with dicts,
-        pass ``None`` as the ``object_converter`` to :class:`Scanner`
-        and/or its callers.
+    .pass ``None`` as the ``object_converter`` to :func:`decode`,
+    .:class:`Scanner`, etc.
 
     Items can be accessed via dotted or bracket notation::
 
@@ -18,7 +18,7 @@ class JSONObject(types.SimpleNamespace):
         >>> obj["x"]
         1
 
-    Objects can be converted dicts by calling `dict` on them::
+    An object can be converted to a dict by calling `dict` on it::
 
         >>> obj = JSONObject(x=1)
         >>> dict(obj)

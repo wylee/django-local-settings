@@ -3,20 +3,15 @@
 In addition to standard JSON, the JSONesque decoder also supports/
 handles the following:
 
-- *All* scanning methods can be overridden if some additional
-  customization is required
-- An object converter can be specified to convert plain Python dicts
-  parsed from JSON into specialized objects; by default, objects will
-  be converted to :class:`scanner.JSONObject`, which allows items to be
-  accessed with either dotted or bracket notation
-- A fallback scanner method can be provided to handle additional types
-  of values
 - Trailing commas
 - Line comments starting with //
 - Any valid Python int or float:
   - Literal binary, octal, and hex values
   - Underscore separators in numbers
   - Unary plus operator
+- Math constants:
+  - inf, nan, E, π, PI, τ, TAU
+  - Infinity, NaN
 - Literal (unquoted) dates & times:
   - 2021-06
   - 2021-06-23
@@ -24,6 +19,14 @@ handles the following:
   - 2021-06-23T12:00Z
   - 2021-06-23T12:00-07:00
   - 12:00 (today's date at noon)
+- An object converter can be specified to convert plain Python dicts
+  parsed from JSON into specialized objects; by default, objects will
+  be converted to :class:`scanner.JSONObject`, which allows items to be
+  accessed with either dotted or bracket notation
+- *All* scanning methods can be overridden if some additional
+  customization is required
+- A fallback scanner method can be provided to handle additional types
+  of values
 
 .. note:: For dates and times, when a time zone isn't specified, the
     local time zone will be used.
@@ -64,7 +67,7 @@ def decode(
     scan_date: Callable = scanner.scan_date,
     scan_number: Callable = scanner.scan_number,
     fallback_scanner: Optional[Callable] = None,
-    disable_extras: bool = False,
+    enable_extras: bool = True,
     ignore_extra_data: bool = False,
 ) -> Union[Any, Tuple[Any, int]]:
     """Scan JSONesque string and return a Python object.
@@ -73,7 +76,7 @@ def decode(
     callable. By default, JSON objects are converted to simple Python
     namespace objects that allow attributes to be accessed via dotted or
     bracket notation. These objects can be converted to plain dicts with
-    ``dict(obj)`` or you can use ``object_converter=None`` to get back a
+    ``dict(obj)`` or you can use ``object_converter=None`` to get back
     plain dicts.
 
     A different object converter can be passed to customize object
@@ -82,7 +85,8 @@ def decode(
         def converter(obj):
             if "__type__" in obj:
                 # Convert to type based on __type__
-                ...
+                T = types[obj["__type__"]]
+                return T(**obj)
             # Don't convert since no type was specified
             return obj
 
@@ -137,22 +141,23 @@ def decode(
         >>> decode("[0b11, 11, 0x11]")
         [3, 11, 17]
 
-    When the ``ignore_extra_data`` flag is set, a tuple will be
-    returned containing 1) a Python object representing the part of the
-    JSON string that was successfully parsed and 2) the index in the
-    JSON string where the extra data starts. In most cases, extra data
-    indicates an error, but this functionality can be used intentionally
+    When the ``ignore_extra_data`` flag is set, a tuple will be returned
+    containing 1) a Python object representing the part of the JSON
+    string that was successfully parsed and 2) the index in the JSON
+    string where the extra data starts. In most cases, extra data
+    indicates an error, but this flag can be used to intentionally
     include extra data:
 
         >>> decode('{} # ignored', object_converter=None, ignore_extra_data=True)
         ({}, 3)
 
-    An advanced/esoteric feature for use where additional customization
-    is required is the ``fallback_scanner``. This is a callable that
-    accepts a :class:`Scanner` instance, the JSON string, and the
-    current index/position and returns a Python value along with the
-    next index/position in the JSON string. See the scanners in
-    :mod:`jsonesque.scanner` for examples.
+    An advanced/esoteric/low level feature for use where additional
+    customization of parsing is required is the ``fallback_scanner``.
+    This is a callable that accepts a :class:`Scanner` instance, the
+    complete JSON input string, and the current index/position; it must
+    return a Python value along with the next index/position in the JSON
+    string after the parsed value. See :mod:`jsonesque.scanner` for
+    examples.
 
     """
     instance = scanner.Scanner(
@@ -163,7 +168,7 @@ def decode(
         scan_string=scan_string,
         scan_date=scan_date,
         scan_number=scan_number,
-        disable_extras=disable_extras,
+        enable_extras=enable_extras,
         fallback_scanner=fallback_scanner,
     )
     obj, i = instance.scan(string)

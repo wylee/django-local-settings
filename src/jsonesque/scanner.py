@@ -36,7 +36,7 @@ def skip_whitespace(
     if comments and string[i : i + 2] == "//":
         i = string.find("\n", i + 3)
         i = len(string) if i == -1 else i + 1
-        return skip_whitespace(string, i, comments=True)
+        return skip_whitespace(string, i, comments=comments)
     return i
 
 
@@ -46,16 +46,14 @@ def scan_object(
     i,
     *,
     converter=JSONObject,
-    disable_extras=False,
+    enable_extras=False,
     skip_whitespace=skip_whitespace,
 ):
     if string[i : i + 1] != "{":
         raise ExpectedBracket(string, i, "{")
 
-    strip_comments = not disable_extras
-
     i += 1
-    i = skip_whitespace(string, i, comments=strip_comments)
+    i = skip_whitespace(string, i, comments=enable_extras)
 
     if string[i : i + 1] == "}":
         return converter() if converter else {}, i + 1
@@ -75,7 +73,7 @@ def scan_object(
         # Delimiting colon, which may be followed by whitespace
         if string[i : i + 1] == ":":
             i += 1
-            i = skip_whitespace(string, i, comments=strip_comments)
+            i = skip_whitespace(string, i, comments=enable_extras)
         else:
             raise ExpectedDelimiter(string, i, ":")
 
@@ -89,7 +87,7 @@ def scan_object(
         if string[i : i + 1] == ",":
             comma_i = i
             i += 1
-            i = skip_whitespace(string, i, comments=strip_comments)
+            i = skip_whitespace(string, i, comments=enable_extras)
         else:
             comma_i = None
 
@@ -98,7 +96,7 @@ def scan_object(
 
         # Closing brace
         if string[i : i + 1] == "}":
-            if disable_extras and comma_i is not None:
+            if comma_i is not None and not enable_extras:
                 raise UnexpectedToken(string, comma_i, ",")
             stack_pop(string, "{", "}", i)
             i += 1
@@ -112,16 +110,14 @@ def scan_array(
     string,
     i,
     *,
-    disable_extras=False,
+    enable_extras=False,
     skip_whitespace=skip_whitespace,
 ):
     if string[i : i + 1] != "[":
         raise ExpectedBracket(string, i, "[")
 
-    strip_comments = not disable_extras
-
     i += 1
-    i = skip_whitespace(string, i, comments=strip_comments)
+    i = skip_whitespace(string, i, comments=enable_extras)
 
     if string[i : i + 1] == "]":
         return [], i + 1
@@ -141,7 +137,7 @@ def scan_array(
         if string[i : i + 1] == ",":
             comma_i = i
             i += 1
-            i = skip_whitespace(string, i, comments=strip_comments)
+            i = skip_whitespace(string, i, comments=enable_extras)
         else:
             comma_i = None
 
@@ -149,7 +145,7 @@ def scan_array(
             break
 
         if string[i : i + 1] == "]":
-            if disable_extras and comma_i is not None:
+            if comma_i is not None and not enable_extras:
                 raise UnexpectedToken(string, comma_i, ",")
             stack_pop(string, "[", "]", i)
             i += 1
@@ -162,7 +158,7 @@ scan_string = json.decoder.scanstring
 
 
 # NOTE: To avoid ambiguity with ints, dates must have at least a year
-#       and month part and times must have at least a hour and minute
+#       and month part and times must have at least an hour and minute
 #       part.
 YEAR = r"\d\d\d[1-9]"
 MONTH = r"0[1-9]|1[1-2]"
@@ -290,7 +286,7 @@ class Scanner:
         scan_string=scan_string,
         scan_date=scan_date,
         scan_number=scan_number,
-        disable_extras=False,
+        enable_extras=True,
         fallback_scanner=None,
     ):
         self.scan_object = scan_object
@@ -300,7 +296,7 @@ class Scanner:
         self.scan_date = scan_date
         self.scan_number = scan_number
         self.fallback_scanner = fallback_scanner
-        self.disable_extras = disable_extras
+        self.enable_extras = enable_extras
         self.strict = strict
         self.stack = []
         # Make sure all bare times use the same today value
@@ -316,8 +312,8 @@ class Scanner:
         default_scan_number=json.scanner.NUMBER_RE.match,
     ):
         start = i
-        strip_comments = not self.disable_extras
-        i = skip_whitespace(string, i, comments=strip_comments)
+        enable_extras = self.enable_extras
+        i = skip_whitespace(string, i, comments=enable_extras)
 
         if not string[i:]:
             if start == 0:
@@ -325,51 +321,54 @@ class Scanner:
             raise ExpectedValue(string, i)
 
         val = no_val
-        token = string[i]
+        char = string[i]
 
-        if token == "{":
+        if char == "{":
             val, i = self.scan_object(
                 self,
                 string,
                 i,
                 converter=self.object_converter,
-                disable_extras=self.disable_extras,
+                enable_extras=self.enable_extras,
             )
 
-        elif token == "[":
+        elif char == "[":
             val, i = self.scan_array(
                 self,
                 string,
                 i,
-                disable_extras=self.disable_extras,
+                enable_extras=self.enable_extras,
             )
 
-        elif token == '"':
+        elif char == '"':
             val, i = self.scan_string(string, i + 1, self.strict)
 
-        elif token == "n" and string[i : i + 4] == "null":
+        elif char == "n" and string[i : i + 4] == "null":
             val, i = None, i + 4
 
-        elif token == "t" and string[i : i + 4] == "true":
+        elif char == "t" and string[i : i + 4] == "true":
             val, i = True, i + 4
 
-        elif token == "f" and string[i : i + 5] == "false":
+        elif char == "f" and string[i : i + 5] == "false":
             val, i = False, i + 5
 
-        elif not self.disable_extras:
-            result = self.scan_date(self, string, i, today=self.today)
-            if result is not None:
-                val, i = result
-            else:
+        elif enable_extras:
+            if char in "0123456789":
+                result = self.scan_date(self, string, i, today=self.today)
+                if result is not None:
+                    val, i = result
+
+            if val is no_val and char in "0123456789+-iInNEPπTτ":
                 result = self.scan_number(self, string, i)
                 if result is not None:
                     val, i = result
-                elif self.fallback_scanner:
-                    result = self.fallback_scanner(self, string, i)
-                    if result is not None:
-                        val, i = result
 
-        else:
+            if val is no_val and self.fallback_scanner:
+                result = self.fallback_scanner(self, string, i)
+                if result is not None:
+                    val, i = result
+
+        elif char in "0123456789-":
             match = default_scan_number(string, i)
             if match is not None:
                 integer, fraction, exponent = match.groups()
@@ -380,12 +379,13 @@ class Scanner:
                 i = match.end()
 
         if val is no_val:
-            raise UnknownToken(string, i, token)
+            raise UnknownToken(string, i, char)
 
-        if start == 0 and token in "{[" and self.stack:
-            raise UnmatchedBracket(string, *self.stack[-1])
+        if start == 0 and char in "{[" and self.stack:
+            bracket, position = self.stack[-1]
+            raise UnmatchedBracket(string, bracket, position)
 
-        i = skip_whitespace(string, i, comments=strip_comments)
+        i = skip_whitespace(string, i, comments=enable_extras)
         return val, i
 
     def pop(self, string, left, right, right_i):

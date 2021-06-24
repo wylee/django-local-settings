@@ -24,11 +24,11 @@ def load_tests(loader, tests, ignore):
 
 
 class TestJSONEsqueScanner(unittest.TestCase):
-    def decode(self, string, object_converter=None, disable_extras=False):
+    def decode(self, string, object_converter=None, enable_extras=True):
         return decode(
             string,
             object_converter=object_converter,
-            disable_extras=disable_extras,
+            enable_extras=enable_extras,
         )
 
     def test_empty_string_is_none(self):
@@ -104,10 +104,10 @@ class TestJSONEsqueScanner(unittest.TestCase):
             "b": 2,
         }
         """
-        self.assertRaises(UnknownToken, self.decode, doc, disable_extras=True)
+        self.assertRaises(UnknownToken, self.decode, doc, enable_extras=False)
 
     def test_trailing_commas_with_extra_features_disabled(self):
-        self.assertRaises(UnexpectedToken, self.decode, "[1, 2,]", disable_extras=True)
+        self.assertRaises(UnexpectedToken, self.decode, "[1, 2,]", enable_extras=False)
 
 
 class TestJSONEsqueAgainstJSONCheckerFiles(unittest.TestCase):
@@ -121,7 +121,7 @@ class TestJSONEsqueAgainstJSONCheckerFiles(unittest.TestCase):
     def test_pass1_with_extra_features_disabled(self):
         # Standard JSON shouldn't require any extra features.
         doc = self.read("pass1")
-        decode(doc, disable_extras=True)
+        decode(doc, enable_extras=False)
 
     def test_pass1_with_extra_features_enabled(self):
         # JSONEsque's extra features are a superset of the standard
