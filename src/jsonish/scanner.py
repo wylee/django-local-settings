@@ -274,7 +274,7 @@ def scan_number(
 
 class Scanner:
 
-    """Scan JSONesque string and return Python object."""
+    """Scan JSONish string and return Python object."""
 
     def __init__(
         self,

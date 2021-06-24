@@ -10,7 +10,7 @@ keywords = ["django", "settings", "local", "env", "environment"]
 
 packages = [
     { include = "local_settings", from = "src" },
-    { include = "jsonesque", from = "src" },
+    { include = "jsonish", from = "src" },
 ]
 
 include = [

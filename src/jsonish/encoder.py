@@ -1,4 +1,4 @@
-"""JSONesque Encoder
+"""JSONish Encoder
 
 For now, this just passes through to the stdlib :func:`json.dump` and
 :func:`dumps`.

@@ -1,7 +1,7 @@
-"""JSONesque Decoder
+"""JSONish Decoder
 
-In addition to standard JSON, the JSONesque decoder also supports/
-handles the following:
+In addition to standard JSON, the JSONish decoder also supports/handles
+the following:
 
 - Trailing commas
 - Line comments starting with //
@@ -71,7 +71,7 @@ def decode(
     enable_extras: bool = True,
     ignore_extra_data: bool = False,
 ) -> Union[Any, Tuple[Any, int]]:
-    """Scan JSONesque string and return a Python object.
+    """Scan JSONish string and return a Python object.
 
     The type of the object is determined by the ``object_converter``
     callable. By default, JSON objects are converted to simple Python
@@ -157,7 +157,7 @@ def decode(
     This is a callable that accepts a :class:`Scanner` instance, the
     complete JSON input string, and the current index/position; it must
     return a Python value along with the next index/position in the JSON
-    string after the parsed value. See :mod:`jsonesque.scanner` for
+    string after the parsed value. See :mod:`jsonish.scanner` for
     examples.
 
     """
@@ -194,7 +194,7 @@ def decode_file(
     enable_extras: bool = True,
     ignore_extra_data: bool = False,
 ) -> Union[Any, Tuple[Any, int]]:
-    """Read file, scan JSONesque string, and return a Python object.
+    """Read file, scan JSONish string, and return a Python object.
 
     This reads the file into a string, then calls :func:`decode`; see
     its docstring for details.

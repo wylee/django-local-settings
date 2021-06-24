@@ -3,11 +3,11 @@ import math
 import unittest
 from pathlib import Path
 
-import jsonesque.decoder
-import jsonesque.scanner
+import jsonish.decoder
+import jsonish.scanner
 
-from jsonesque import decode, decode_file
-from jsonesque.exc import (
+from jsonish import decode, decode_file
+from jsonish.exc import (
     ExpectedKey,
     ExpectedValue,
     ExtraneousData,
@@ -18,12 +18,12 @@ from jsonesque.exc import (
 
 
 def load_tests(loader, tests, ignore):
-    tests.addTests(doctest.DocTestSuite(jsonesque.decoder))
-    tests.addTests(doctest.DocTestSuite(jsonesque.scanner))
+    tests.addTests(doctest.DocTestSuite(jsonish.decoder))
+    tests.addTests(doctest.DocTestSuite(jsonish.scanner))
     return tests
 
 
-class TestJSONEsqueScanner(unittest.TestCase):
+class TestJSONishScanner(unittest.TestCase):
     def decode(self, string, object_converter=None, enable_extras=True):
         return decode(
             string,
@@ -110,7 +110,7 @@ class TestJSONEsqueScanner(unittest.TestCase):
         self.assertRaises(UnexpectedToken, self.decode, "[1, 2,]", enable_extras=False)
 
 
-class TestJSONEsqueAgainstJSONCheckerFiles(unittest.TestCase):
+class TestJSONishAgainstJSONCheckerFiles(unittest.TestCase):
     def decode_file(self, name, enable_extras=True):
         file_name = f"{name}.json"
         path = Path(__file__).parent / "json_checker_files" / file_name
@@ -121,7 +121,7 @@ class TestJSONEsqueAgainstJSONCheckerFiles(unittest.TestCase):
         self.decode_file("pass1", enable_extras=False)
 
     def test_pass1_with_extra_features_enabled(self):
-        # JSONEsque's extra features are a superset of the standard
+        # JSONish's extra features are a superset of the standard
         # features, so there shouldn't be any issues parsing a standard
         # JSON doc with them turned on.
         self.decode_file("pass1")

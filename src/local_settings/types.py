@@ -1,4 +1,4 @@
-from jsonesque import dumps
+from jsonish import dumps
 
 from .exc import NoDefaultError, NoValueError, DefaultValueError
 from .util import NO_DEFAULT

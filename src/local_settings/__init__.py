@@ -2,7 +2,7 @@ import inspect
 import os
 import sys
 
-from jsonesque import loads
+from jsonish import loads
 
 from .color_printer import color_printer as printer
 from .exc import LocalSettingsError, SettingsFileDidNotPassCheck

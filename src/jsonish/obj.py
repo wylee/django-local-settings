@@ -7,8 +7,8 @@ class JSONObject(types.SimpleNamespace):
     JSON objects will be converted to this type by default.
 
     .. note:: In cases where you generally need/want to work with dicts,
-    .pass ``None`` as the ``object_converter`` to :func:`decode`,
-    .:class:`Scanner`, etc.
+        .pass ``None`` as the ``object_converter`` to :func:`decode`,
+        .:class:`Scanner`, etc.
 
     Items can be accessed via dotted or bracket notation::
 
