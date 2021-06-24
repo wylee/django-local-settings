@@ -1,5 +1,14 @@
 # Change Log for django-local-settings
 
+## 2.0a6 - 2021-06-24
+
+- Improved support for additional JSON features by writing a whole new
+  parser (because why not). This fixes the issue note in 2.0a5 where
+  the additional date and number formats couldn't be used in nested
+  structures. It also adds support for inline comments (// style), adds
+  customization hooks, and allows all the extra features to be disabled
+  so that only standard JSON will be accepted.
+
 ## 2.0a5 - 2021-06-23
 
 - Added support for trailing commas in list and dict settings. This

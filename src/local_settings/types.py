@@ -1,4 +1,4 @@
-import json
+from jsonesque import dumps
 
 from .exc import NoDefaultError, NoValueError, DefaultValueError
 from .util import NO_DEFAULT
@@ -28,7 +28,7 @@ class LocalSetting:
                 if callable(default):
                     default = default()
                 try:
-                    json.dumps(default)
+                    dumps(default)
                 except TypeError as exc:
                     raise TypeError(
                         f"{exc}\nDefault value for LocalSetting must "

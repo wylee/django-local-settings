@@ -1,12 +1,12 @@
 """Strategies for reading from & writing to config files."""
 import logging
-import json
 import os
 from abc import ABCMeta, abstractmethod
 from configparser import NoSectionError, RawConfigParser
 
+from jsonesque import loads, dumps, DecodeError
+
 from .exc import SettingsFileNotFoundError, SettingsFileSectionNotFoundError
-from .json import JSONDecoder
 from .util import parse_file_name_and_section
 
 
@@ -272,18 +272,18 @@ class INIJSONStrategy(INIStrategy):
     file_types = ("cfg",)
 
     def decode_value(self, value):
-        value = value.strip()
-        if not value:
-            return None
         try:
-            value = JSONDecoder.loads(value)
-        except ValueError:
-            value = value.replace("\n", " ")
-            raise ValueError(f"Could not parse `{value}` as JSON, number, or datetime")
+            value = loads(value, object_converter=None)
+        except DecodeError as exc:
+            raise ValueError(
+                f"Could not parse `{value}` as JSON, number, or "
+                f"datetime (issue at line {exc.line} column "
+                f"{exc.column} position {exc.position})",
+            )
         return value
 
     def encode_value(self, value):
-        return json.dumps(value)
+        return dumps(value)
 
 
 def get_strategy_types():
