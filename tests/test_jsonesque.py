@@ -6,7 +6,7 @@ from pathlib import Path
 import jsonesque.decoder
 import jsonesque.scanner
 
-from jsonesque import decode
+from jsonesque import decode, decode_file
 from jsonesque.exc import (
     ExpectedKey,
     ExpectedValue,
@@ -111,21 +111,17 @@ class TestJSONEsqueScanner(unittest.TestCase):
 
 
 class TestJSONEsqueAgainstJSONCheckerFiles(unittest.TestCase):
-    def read(self, name):
+    def decode_file(self, name, enable_extras=True):
         file_name = f"{name}.json"
         path = Path(__file__).parent / "json_checker_files" / file_name
-        with path.open() as fp:
-            doc = fp.read()
-        return doc
+        return decode_file(path, enable_extras=enable_extras)
 
     def test_pass1_with_extra_features_disabled(self):
         # Standard JSON shouldn't require any extra features.
-        doc = self.read("pass1")
-        decode(doc, enable_extras=False)
+        self.decode_file("pass1", enable_extras=False)
 
     def test_pass1_with_extra_features_enabled(self):
         # JSONEsque's extra features are a superset of the standard
         # features, so there shouldn't be any issues parsing a standard
         # JSON doc with them turned on.
-        doc = self.read("pass1")
-        decode(doc)
+        self.decode_file("pass1")

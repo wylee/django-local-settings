@@ -50,7 +50,8 @@ Examples::
     [[]]
 
 """
-from typing import Any, Callable, Optional, Tuple, Union
+from pathlib import Path
+from typing import Any, Callable, Optional, TextIO, Tuple, Union
 
 from . import scanner
 from .exc import ExtraneousData
@@ -177,3 +178,51 @@ def decode(
     elif i != len(string):
         raise ExtraneousData(string, i)
     return obj
+
+
+def decode_file(
+    file: Union[str, Path, TextIO],
+    *,
+    strict: bool = True,
+    scan_object: Callable = scanner.scan_object,
+    object_converter: Callable = scanner.JSONObject,
+    scan_array: Callable = scanner.scan_array,
+    scan_string: Callable = scanner.scan_string,
+    scan_date: Callable = scanner.scan_date,
+    scan_number: Callable = scanner.scan_number,
+    fallback_scanner: Optional[Callable] = None,
+    enable_extras: bool = True,
+    ignore_extra_data: bool = False,
+) -> Union[Any, Tuple[Any, int]]:
+    """Read file, scan JSONesque string, and return a Python object.
+
+    This reads the file into a string, then calls :func:`decode`; see
+    its docstring for details.
+
+    TODO: This reads the whole file all at once. Maybe find a way to
+          stream the file contents, although this would add a bit of
+          complexity to the scanner in order to make it generically
+          handle iterables of chars.
+
+    """
+    if isinstance(file, str):
+        with open(file) as fp:
+            string = fp.read()
+    elif isinstance(file, Path):
+        with file.open() as fp:
+            string = fp.read()
+    else:
+        string = file.read()
+    return decode(
+        string,
+        strict=strict,
+        scan_object=scan_object,
+        object_converter=object_converter,
+        scan_array=scan_array,
+        scan_string=scan_string,
+        scan_date=scan_date,
+        scan_number=scan_number,
+        fallback_scanner=fallback_scanner,
+        enable_extras=enable_extras,
+        ignore_extra_data=ignore_extra_data,
+    )
