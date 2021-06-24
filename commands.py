@@ -13,7 +13,7 @@ def lint():
 
 
 @command
-def test(with_coverage=True, check=True):
+def test(with_coverage=True, check=True, fail_fast=False):
     if with_coverage:
         _local(
             "coverage run "
@@ -23,7 +23,8 @@ def test(with_coverage=True, check=True):
             "&& coverage report"
         )
     else:
-        _local("python -m unittest discover -t . -s tests")
+        fail_fast = "-f" if fail_fast else ""
+        _local(f"python -m unittest discover -t . -s tests {fail_fast}")
     if check:
         format_code(check=True)
         lint()
