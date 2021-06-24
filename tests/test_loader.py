@@ -1,5 +1,4 @@
 import os
-import sys
 import unittest
 
 from local_settings.loader import Loader
@@ -129,12 +128,8 @@ class TestLoading(unittest.TestCase):
             self.assertIn(k, settings)
             self.assertEqual(settings[k], expected[k])
 
-        if sys.version_info[:2] >= (3, 5):
-            for key in expected:
-                with self.subTest(key=key):
-                    check_item(key)
-        else:
-            for key in expected:
+        for key in expected:
+            with self.subTest(key=key):
                 check_item(key)
 
     def test_delete(self):
