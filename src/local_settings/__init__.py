@@ -1,7 +1,8 @@
 import inspect
 import os
 import sys
-from json import loads
+
+from jsonesque import loads
 
 from .color_printer import color_printer as printer
 from .exc import LocalSettingsError, SettingsFileDidNotPassCheck

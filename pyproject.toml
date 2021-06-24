@@ -9,7 +9,8 @@ readme = "README.md"
 keywords = ["django", "settings", "local", "env", "environment"]
 
 packages = [
-    { include = "local_settings", from = "src" }
+    { include = "local_settings", from = "src" },
+    { include = "jsonesque", from = "src" },
 ]
 
 include = [
