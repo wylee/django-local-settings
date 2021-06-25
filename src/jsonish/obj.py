@@ -1,6 +1,9 @@
 import types
 
 
+__all__ = ["JSONObject"]
+
+
 class JSONObject(types.SimpleNamespace):
     """A simple bucket of attributes.
 

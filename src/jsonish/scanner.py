@@ -12,11 +12,15 @@ from .exc import (
     ExpectedDelimiter,
     ExpectedKey,
     ExpectedValue,
+    ExtraneousData,
     UnexpectedToken,
     UnknownToken,
     UnmatchedBracket,
 )
 from .obj import JSONObject
+
+
+__all__ = ["Scanner"]
 
 
 WHITESPACE = " \f\n\r\t\v"
@@ -60,7 +64,7 @@ def scan_object(
 
     obj = {}
     stack = scanner.stack
-    stack_pop = scanner.pop
+    stack_pop = scanner._pop
     stack.append(("{", i - 1))
 
     while True:
@@ -125,7 +129,7 @@ def scan_array(
     array = []
     array_append = array.append
     stack = scanner.stack
-    stack_pop = scanner.pop
+    stack_pop = scanner._pop
     stack.append(("[", i - 1))
 
     while True:
@@ -299,8 +303,28 @@ class Scanner:
         self.enable_extras = enable_extras
         self.strict = strict
         self.stack = []
-        # Make sure all bare times use the same today value
+        # Ensure all bare times use the same today value
         self.today = arrow.now(tz=TZ_LOCAL).floor("day")
+
+    def decode(self, string, *, ignore_extra_data=False):
+        """Scan JSONish string and return a Python object.
+
+        When creating a :class:`Decoder` for scanning multiple JSON
+        documents, this is the method that should generally be used.
+        This method cleans up internal state between scans whereas
+        :meth:`scan` does not.
+
+        .. note:: :class:`Decoder` is an alias for :class:`Scanner`. The
+            former is preferred for most public usage.
+
+        """
+        self.stack.clear()
+        obj, i = self.scan(string)
+        if ignore_extra_data:
+            return obj, i
+        elif i != len(string):
+            raise ExtraneousData(string, i)
+        return obj
 
     def scan(
         self,
@@ -388,7 +412,7 @@ class Scanner:
         i = skip_whitespace(string, i, comments=enable_extras)
         return val, i
 
-    def pop(self, string, left, right, right_i):
+    def _pop(self, string, left, right, right_i):
         stack = self.stack
         if not stack:
             raise UnmatchedBracket(string, right, right_i)

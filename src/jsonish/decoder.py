@@ -54,7 +54,10 @@ from pathlib import Path
 from typing import Any, Callable, Optional, TextIO, Tuple, Union
 
 from . import scanner
-from .exc import ExtraneousData
+from .scanner import Scanner as Decoder
+
+
+__all__ = ["decode", "decode_file", "Decoder"]
 
 
 def decode(
@@ -172,12 +175,7 @@ def decode(
         enable_extras=enable_extras,
         fallback_scanner=fallback_scanner,
     )
-    obj, i = instance.scan(string)
-    if ignore_extra_data:
-        return obj, i
-    elif i != len(string):
-        raise ExtraneousData(string, i)
-    return obj
+    return instance.decode(string, ignore_extra_data=ignore_extra_data)
 
 
 def decode_file(
