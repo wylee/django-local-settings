@@ -2,6 +2,7 @@ import os
 import unittest
 
 from local_settings.loader import Loader
+from local_settings.settings import Settings
 from local_settings.types import EnvSetting, LocalSetting
 
 
@@ -163,6 +164,11 @@ class TestLoading(unittest.TestCase):
         self.assertIn("d", settings.A.b)
 
         self.assertEqual(settings.LIST1, [2])
+
+    def test_bad_interpolation_brackets(self):
+        settings = Settings()
+        self.assertRaises(ValueError, self.loader._inject, "{{", settings)
+        self.assertRaises(ValueError, self.loader._inject, "{{ }}", settings)
 
 
 class TestLoadTypes(unittest.TestCase):

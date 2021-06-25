@@ -254,33 +254,40 @@ class Loader(Base):
 
         i = 0
         stack = []
+        stack_push = stack.append
+        stack_pop = stack.pop
         new_value = value
 
         while True:
-            try:
-                c = new_value[i]
-            except IndexError:
+            if i == len(new_value):
                 break
 
-            try:
-                d = new_value[i + 1]
-            except IndexError:
-                d = " "
+            c = new_value[i]
+            d = new_value[i + 1 : i + 2] or ""
 
             if c == "{" and d == "{":
-                stack.append(i)
+                stack_push(i)
                 i += 2
+
             elif c == "}" and d == "}":
-                # g:h => {{ name }}
-                g = stack.pop()
-                h = i + 2
+                # s:e => {{ name }}
+                if stack:
+                    s = stack_pop()
+                else:
+                    raise ValueError(
+                        "Found closing delimiter without opening "
+                        f"delimiter at position {i}"
+                    )
 
-                # m:n => name
-                m = g + 2
-                n = i
-
-                name = new_value[m:n]
+                e = i + 2
+                group = new_value[s:e]
+                name = group[2:-2]
                 name = name.strip()
+
+                if not name:
+                    raise ValueError(
+                        f"Found empty interpolation group at position {s}:{e}"
+                    )
 
                 try:
                     v = settings.get_dotted(name)
@@ -290,15 +297,15 @@ class Loader(Base):
                 if not isinstance(v, str):
                     v = self.strategy.encode_value(v)
 
-                before = new_value[:g]
-                after = new_value[h:]
+                before = new_value[:s]
+                after = new_value[e:]
                 new_value = "".join((before, v, after))
-
                 i = len(before) + len(v)
+
             else:
                 i += 1
 
         if stack:
-            raise ValueError("Unclosed {{ ... }} in %s" % value)
+            raise ValueError(f"Unclosed {{ ... }} in `{value}`")
 
         return new_value, new_value != value
