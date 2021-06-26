@@ -40,7 +40,9 @@ def skip_whitespace(
     if comments and string[i : i + 2] == "//":
         i = string.find("\n", i + 3)
         i = len(string) if i == -1 else i + 1
-        return skip_whitespace(string, i, comments=comments)
+        next_char = string[i : i + 1]
+        if next_char in whitespace or (comments and next_char == "/"):
+            return skip_whitespace(string, i, comments=comments)
     return i
 
 
@@ -52,15 +54,18 @@ def scan_object(
     stack,
     stack_push,
     stack_pop,
-    enable_extras,
+    enable_extras=True,
     converter=JSONObject,
+    skip_chars=WHITESPACE,
     skip_whitespace=skip_whitespace,
 ):
     if string[i : i + 1] != "{":
         raise ExpectedBracket(string, i, "{")
 
     i += 1
-    i = skip_whitespace(string, i, comments=enable_extras)
+
+    if string[i : i + 1] in skip_chars:
+        i = skip_whitespace(string, i, comments=enable_extras)
 
     if string[i : i + 1] == "}":
         return converter() if converter else {}, i + 1
@@ -78,7 +83,8 @@ def scan_object(
         # Delimiting colon, which may be followed by whitespace
         if string[i : i + 1] == ":":
             i += 1
-            i = skip_whitespace(string, i, comments=enable_extras)
+            if string[i : i + 1] in skip_chars:
+                i = skip_whitespace(string, i, comments=enable_extras)
         else:
             raise ExpectedDelimiter(string, i, ":")
 
@@ -92,7 +98,8 @@ def scan_object(
         if string[i : i + 1] == ",":
             comma_i = i
             i += 1
-            i = skip_whitespace(string, i, comments=enable_extras)
+            if string[i : i + 1] in skip_chars:
+                i = skip_whitespace(string, i, comments=enable_extras)
         else:
             comma_i = None
 
@@ -118,14 +125,17 @@ def scan_array(
     stack,
     stack_push,
     stack_pop,
-    enable_extras,
+    enable_extras=True,
+    skip_chars=WHITESPACE,
     skip_whitespace=skip_whitespace,
 ):
     if string[i : i + 1] != "[":
         raise ExpectedBracket(string, i, "[")
 
     i += 1
-    i = skip_whitespace(string, i, comments=enable_extras)
+
+    if string[i : i + 1] in skip_chars:
+        i = skip_whitespace(string, i, comments=enable_extras)
 
     if string[i : i + 1] == "]":
         return [], i + 1
@@ -143,7 +153,8 @@ def scan_array(
         if string[i : i + 1] == ",":
             comma_i = i
             i += 1
-            i = skip_whitespace(string, i, comments=enable_extras)
+            if string[i : i + 1] in skip_chars:
+                i = skip_whitespace(string, i, comments=enable_extras)
         else:
             comma_i = None
 
@@ -305,7 +316,7 @@ class Scanner:
         self.stack = []
         # Ensure all bare times use the same today value
         self.today = arrow.now(tz=TZ_LOCAL).floor("day")
-        self.scan = self.make_scanner()
+        self.scan = self.make_scan_method()
 
     def decode(self, string, *, ignore_extra_data=False):
         """Scan JSONish string and return a Python object.
@@ -327,7 +338,7 @@ class Scanner:
             raise ExtraneousData(string, i)
         return obj
 
-    def make_scanner(self):
+    def make_scan_method(self):
         def stack_pop(
             string,
             left,
@@ -357,6 +368,7 @@ class Scanner:
             scan_number=self.scan_number,
             enable_extras=self.enable_extras,
             fallback_scanner=self.fallback_scanner,
+            skip_chars=(WHITESPACE + "/" if self.enable_extras else WHITESPACE),
             skip_whitespace=skip_whitespace,
             # Instance vars
             stack=self.stack,
@@ -368,7 +380,9 @@ class Scanner:
             default_scan_number=json.scanner.NUMBER_RE.match,
         ):
             start = i
-            i = skip_whitespace(string, i, comments=enable_extras)
+
+            if string[i : i + 1] in skip_chars:
+                i = skip_whitespace(string, i, comments=enable_extras)
 
             if not string[i:]:
                 if start == 0:
@@ -388,6 +402,8 @@ class Scanner:
                     stack_pop=stack_pop,
                     enable_extras=enable_extras,
                     converter=object_converter,
+                    skip_chars=skip_chars,
+                    skip_whitespace=skip_whitespace,
                 )
 
             elif char == "[":
@@ -399,6 +415,8 @@ class Scanner:
                     stack_push=stack_push,
                     stack_pop=stack_pop,
                     enable_extras=enable_extras,
+                    skip_chars=skip_chars,
+                    skip_whitespace=skip_whitespace,
                 )
 
             elif char == '"':
@@ -446,7 +464,9 @@ class Scanner:
                 bracket, position = stack[-1]
                 raise UnmatchedBracket(string, bracket, position)
 
-            i = skip_whitespace(string, i, comments=enable_extras)
+            if string[i : i + 1] in skip_chars:
+                i = skip_whitespace(string, i, comments=enable_extras)
+
             return val, i
 
         return scan
