@@ -4,14 +4,18 @@ In addition to standard JSON, the JSONish decoder also supports/handles
 the following:
 
 - Trailing commas
+
 - Line comments starting with //
+
 - Any valid Python int or float:
   - Literal binary, octal, and hex values
   - Underscore separators in numbers
   - Unary plus operator
+
 - Math constants:
   - inf, nan, E, π, PI, τ, TAU
   - Infinity, NaN
+
 - Literal (unquoted) dates & times:
   - 2021-06
   - 2021-06-23
@@ -19,17 +23,26 @@ the following:
   - 2021-06-23T12:00Z
   - 2021-06-23T12:00-07:00
   - 12:00 (today's date at noon)
+
+.. note:: For dates and times, when a time zone isn't specified, the
+    local time zone will be used.
+
 - An object converter can be specified to convert plain Python dicts
   parsed from JSON into specialized objects; by default, objects will
   be converted to :class:`scanner.JSONObject`, which allows items to be
   accessed with either dotted or bracket notation
+
 - *All* scanning methods can be overridden if some additional
   customization is required
-- A fallback scanner method can be provided to handle additional types
-  of values
 
-.. note:: For dates and times, when a time zone isn't specified, the
-    local time zone will be used.
+- A prescan method can be provided to handle values before the JSON
+  scanners are applied
+
+- A fallback scanner method can be provided to handle additional types
+  of values if none of the default scanners are suitable
+
+.. note:: See details below in :func:`decode` for using prescan or a
+    fallback scanner.
 
 Examples::
 
@@ -64,6 +77,7 @@ def decode(
     string: str,
     *,
     strict: bool = True,
+    prescan: Optional[Callable] = None,
     scan_object: Callable = scanner.scan_object,
     object_converter: Callable = scanner.JSONObject,
     scan_array: Callable = scanner.scan_array,
@@ -155,17 +169,25 @@ def decode(
         >>> decode('{} # ignored', object_converter=None, ignore_extra_data=True)
         ({}, 3)
 
-    An advanced/esoteric/low level feature for use where additional
-    customization of parsing is required is the ``fallback_scanner``.
-    This is a callable that accepts a :class:`Scanner` instance, the
-    complete JSON input string, and the current index/position; it must
-    return a Python value along with the next index/position in the JSON
-    string after the parsed value. See :mod:`jsonish.scanner` for
-    examples.
+    There are a couple of advanced/esoteric/low level features for use
+    where additional customization of parsing is required:
+
+    - The prescanner. This is a callable that takes the scanner
+      instance, the primary scan function, the JSON input string, and
+      the current position; it can either return a value and the next
+      position or ``None``. Returning ``None`` indicates that the
+      prescanner didn't handle the string and that the regular scanners
+      should be tried.
+
+    - The fallback scanner. This is a callable that take a scanner
+      instance, the primary scan function, the JSON input string, and
+      the current position; it must return a Python value along with
+      the next position.
 
     """
     instance = scanner.Scanner(
         strict=strict,
+        prescan=prescan,
         scan_object=scan_object,
         object_converter=object_converter,
         scan_array=scan_array,
@@ -182,6 +204,7 @@ def decode_file(
     file: Union[str, Path, TextIO],
     *,
     strict: bool = True,
+    prescan=None,
     scan_object: Callable = scanner.scan_object,
     object_converter: Callable = scanner.JSONObject,
     scan_array: Callable = scanner.scan_array,
@@ -214,6 +237,7 @@ def decode_file(
     return decode(
         string,
         strict=strict,
+        prescan=prescan,
         scan_object=scan_object,
         object_converter=object_converter,
         scan_array=scan_array,

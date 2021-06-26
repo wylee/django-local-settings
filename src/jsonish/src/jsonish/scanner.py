@@ -295,6 +295,7 @@ class Scanner:
         self,
         *,
         strict=True,
+        prescan=None,
         scan_object=scan_object,
         object_converter=JSONObject,
         scan_array=scan_array,
@@ -304,6 +305,7 @@ class Scanner:
         enable_extras=True,
         fallback_scanner=None,
     ):
+        self.prescan = prescan
         self.scan_object = scan_object
         self.object_converter = object_converter
         self.scan_array = scan_array
@@ -360,6 +362,7 @@ class Scanner:
             *,
             # Instance config
             strict=self.strict,
+            prescan=self.prescan,
             scan_object=self.scan_object,
             object_converter=self.object_converter,
             scan_array=self.scan_array,
@@ -391,6 +394,19 @@ class Scanner:
 
             val = no_val
             char = string[i]
+
+            if prescan is not None:
+                result = prescan(self, scan, string, i)
+                if result is not None:
+                    val, i = result
+                    # XXX: This duplicates code below because of early
+                    #      return.
+                    if start == 0 and char in "{[" and stack:
+                        bracket, position = stack[-1]
+                        raise UnmatchedBracket(string, bracket, position)
+                    if string[i : i + 1] in skip_chars:
+                        i = skip_whitespace(string, i, comments=enable_extras)
+                    return val, i
 
             if char == "{":
                 val, i = scan_object(
@@ -443,7 +459,7 @@ class Scanner:
                         val, i = result
 
                 if val is no_val and fallback_scanner:
-                    result = fallback_scanner(self, string, i)
+                    result = fallback_scanner(self, scan, string, i)
                     if result is not None:
                         val, i = result
 
