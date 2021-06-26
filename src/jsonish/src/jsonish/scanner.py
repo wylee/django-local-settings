@@ -2,7 +2,9 @@ import json
 import json.scanner
 import math
 import re
+from datetime import datetime
 from functools import partial
+from typing import Any, Callable, Dict, List, Tuple, Union
 
 import arrow
 import dateutil
@@ -23,6 +25,9 @@ from .obj import JSONObject
 __all__ = ["Scanner"]
 
 
+Number = Union[int, float]
+
+
 WHITESPACE = " \f\n\r\t\v"
 WHITESPACE_RE = re.compile(r"[ \f\n\r\t\v]*")
 
@@ -34,7 +39,7 @@ def skip_whitespace(
     comments=True,
     whitespace=WHITESPACE,
     whitespace_re=WHITESPACE_RE,
-):
+) -> int:
     if string[i : i + 1] in whitespace:
         i = whitespace_re.match(string, i).end()
     if comments and string[i : i + 2] == "//":
@@ -58,7 +63,7 @@ def scan_object(
     converter=JSONObject,
     skip_chars=WHITESPACE,
     skip_whitespace=skip_whitespace,
-):
+) -> Tuple[Union[Dict, Any], int]:
     if string[i : i + 1] != "{":
         raise ExpectedBracket(string, i, "{")
 
@@ -128,7 +133,7 @@ def scan_array(
     enable_extras=True,
     skip_chars=WHITESPACE,
     skip_whitespace=skip_whitespace,
-):
+) -> Tuple[List, int]:
     if string[i : i + 1] != "[":
         raise ExpectedBracket(string, i, "[")
 
@@ -208,7 +213,7 @@ def scan_date(
     # NOTE: Arrow requires this to be a *list*
     time_formats=["HH:mm", "HH:mm:ss", "HH:mm:ss.S"],
     tz_local=TZ_LOCAL,
-):
+) -> [datetime, int]:
     for (regex, is_time_only) in converters:
         match = regex.match(string, i)
         if match is not None:
@@ -269,7 +274,7 @@ def scan_number(
     i,
     *,
     converters=NUMBER_CONVERTERS,
-):
+) -> [Number, int]:
     for (regex, converter, is_const) in converters:
         match = regex.match(string, i)
         if match is not None:
@@ -320,7 +325,7 @@ class Scanner:
         self.today = arrow.now(tz=TZ_LOCAL).floor("day")
         self.scan = self.make_scan_method()
 
-    def decode(self, string, *, ignore_extra_data=False):
+    def decode(self, string, *, ignore_extra_data=False) -> Union[Any, Tuple[Any, int]]:
         """Scan JSONish string and return a Python object.
 
         When creating a :class:`Decoder` for scanning multiple JSON
@@ -340,7 +345,7 @@ class Scanner:
             raise ExtraneousData(string, i)
         return obj
 
-    def make_scan_method(self):
+    def make_scan_method(self) -> Callable[[...], Tuple[Any, int]]:
         def stack_pop(
             string,
             left,
@@ -381,7 +386,7 @@ class Scanner:
             # Other locals
             no_val=object(),
             default_scan_number=json.scanner.NUMBER_RE.match,
-        ):
+        ) -> Tuple[Any, int]:
             start = i
 
             if string[i : i + 1] in skip_chars:

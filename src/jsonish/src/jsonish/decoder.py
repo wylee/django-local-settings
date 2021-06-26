@@ -67,24 +67,28 @@ from pathlib import Path
 from typing import Any, Callable, Optional, TextIO, Tuple, Union
 
 from . import scanner
-from .scanner import Scanner as Decoder
+from .scanner import Scanner, Scanner as Decoder
 
 
 __all__ = ["decode", "decode_file", "Decoder"]
+
+
+# Signature for prescanner and fallback scanner functions
+AltScannerFunc = Callable[[Scanner, Callable, str, int], Tuple[Any, int]]
 
 
 def decode(
     string: str,
     *,
     strict: bool = True,
-    prescan: Optional[Callable] = None,
+    prescan: Optional[AltScannerFunc] = None,
     scan_object: Callable = scanner.scan_object,
     object_converter: Callable = scanner.JSONObject,
     scan_array: Callable = scanner.scan_array,
     scan_string: Callable = scanner.scan_string,
     scan_date: Callable = scanner.scan_date,
     scan_number: Callable = scanner.scan_number,
-    fallback_scanner: Optional[Callable] = None,
+    fallback_scanner: Optional[AltScannerFunc] = None,
     enable_extras: bool = True,
     ignore_extra_data: bool = False,
 ) -> Union[Any, Tuple[Any, int]]:
@@ -204,14 +208,14 @@ def decode_file(
     file: Union[str, Path, TextIO],
     *,
     strict: bool = True,
-    prescan=None,
+    prescan: Optional[AltScannerFunc] = None,
     scan_object: Callable = scanner.scan_object,
     object_converter: Callable = scanner.JSONObject,
     scan_array: Callable = scanner.scan_array,
     scan_string: Callable = scanner.scan_string,
     scan_date: Callable = scanner.scan_date,
     scan_number: Callable = scanner.scan_number,
-    fallback_scanner: Optional[Callable] = None,
+    fallback_scanner: Optional[AltScannerFunc] = None,
     enable_extras: bool = True,
     ignore_extra_data: bool = False,
 ) -> Union[Any, Tuple[Any, int]]:
