@@ -11,8 +11,8 @@ from jsonish.exc import (
     ExpectedKey,
     ExpectedValue,
     ExtraneousData,
-    UnexpectedToken,
-    UnknownToken,
+    UnexpectedChar,
+    UnknownChar,
     UnmatchedBracket,
 )
 
@@ -104,10 +104,10 @@ class TestJSONishScanner(unittest.TestCase):
             "b": 2,
         }
         """
-        self.assertRaises(UnknownToken, self.decode, doc, enable_extras=False)
+        self.assertRaises(UnknownChar, self.decode, doc, enable_extras=False)
 
     def test_trailing_commas_with_extra_features_disabled(self):
-        self.assertRaises(UnexpectedToken, self.decode, "[1, 2,]", enable_extras=False)
+        self.assertRaises(UnexpectedChar, self.decode, "[1, 2,]", enable_extras=False)
 
 
 class TestJSONishAgainstJSONCheckerFiles(unittest.TestCase):

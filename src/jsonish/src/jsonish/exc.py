@@ -49,20 +49,20 @@ class ExtraneousData(DecodeError):
         super().__init__(string, position, message)
 
 
-class UnexpectedToken(DecodeError):
-    def __init__(self, string, position, token, message=None):
+class UnexpectedChar(DecodeError):
+    def __init__(self, string, position, char, message=None):
         if message is None:
-            message = f"Unexpected token `{token}`"
+            message = f"Unexpected char `{char}`"
         super().__init__(string, position, message)
-        self.token = token
+        self.char = char
 
 
-class UnknownToken(DecodeError):
-    def __init__(self, string, position, token, message=None):
+class UnknownChar(DecodeError):
+    def __init__(self, string, position, char, message=None):
         if message is None:
-            message = f"Unknown token `{token}`"
+            message = f"Unknown char `{char}`"
         super().__init__(string, position, message)
-        self.token = token
+        self.char = char
 
 
 class UnmatchedBracket(DecodeError):

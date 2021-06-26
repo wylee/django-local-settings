@@ -13,8 +13,8 @@ from .exc import (
     ExpectedKey,
     ExpectedValue,
     ExtraneousData,
-    UnexpectedToken,
-    UnknownToken,
+    UnexpectedChar,
+    UnknownChar,
     UnmatchedBracket,
 )
 from .obj import JSONObject
@@ -109,7 +109,7 @@ def scan_object(
         # Closing brace
         if string[i : i + 1] == "}":
             if comma_i is not None and not enable_extras:
-                raise UnexpectedToken(string, comma_i, ",")
+                raise UnexpectedChar(string, comma_i, ",")
             stack_pop(string, "{", "}", i)
             i += 1
             break
@@ -163,7 +163,7 @@ def scan_array(
 
         if string[i : i + 1] == "]":
             if comma_i is not None and not enable_extras:
-                raise UnexpectedToken(string, comma_i, ",")
+                raise UnexpectedChar(string, comma_i, ",")
             stack_pop(string, "[", "]", i)
             i += 1
             break
@@ -458,7 +458,7 @@ class Scanner:
                     i = match.end()
 
             if val is no_val:
-                raise UnknownToken(string, i, char)
+                raise UnknownChar(string, i, char)
 
             if start == 0 and char in "{[" and stack:
                 bracket, position = stack[-1]
