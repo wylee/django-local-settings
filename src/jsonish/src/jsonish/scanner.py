@@ -45,12 +45,15 @@ def skip_whitespace(
 
 
 def scan_object(
-    scanner,
     string,
     i,
     *,
+    scan,
+    stack,
+    stack_push,
+    stack_pop,
+    enable_extras,
     converter=JSONObject,
-    enable_extras=False,
     skip_whitespace=skip_whitespace,
 ):
     if string[i : i + 1] != "{":
@@ -63,16 +66,14 @@ def scan_object(
         return converter() if converter else {}, i + 1
 
     obj = {}
-    stack = scanner.stack
-    stack_pop = scanner._pop
-    stack.append(("{", i - 1))
+    stack_push(("{", i - 1))
 
     while True:
         # Key
         if string[i : i + 1] != '"':
             raise ExpectedKey(string, i)
 
-        key, i = scanner.scan(string, i)
+        key, i = scan(string, i)
 
         # Delimiting colon, which may be followed by whitespace
         if string[i : i + 1] == ":":
@@ -82,7 +83,7 @@ def scan_object(
             raise ExpectedDelimiter(string, i, ":")
 
         # Value
-        value, i = scanner.scan(string, i)
+        value, i = scan(string, i)
 
         # Add entry
         obj[key] = value
@@ -110,11 +111,14 @@ def scan_object(
 
 
 def scan_array(
-    scanner,
     string,
     i,
     *,
-    enable_extras=False,
+    scan,
+    stack,
+    stack_push,
+    stack_pop,
+    enable_extras,
     skip_whitespace=skip_whitespace,
 ):
     if string[i : i + 1] != "[":
@@ -128,13 +132,11 @@ def scan_array(
 
     array = []
     array_append = array.append
-    stack = scanner.stack
-    stack_pop = scanner._pop
-    stack.append(("[", i - 1))
+    stack_push(("[", i - 1))
 
     while True:
         # Value
-        value, i = scanner.scan(string, i)
+        value, i = scan(string, i)
         array_append(value)
 
         # Comma, which may be followed by whitespace
@@ -187,7 +189,6 @@ TZ_LOCAL = dateutil.tz.tzlocal()
 
 
 def scan_date(
-    scanner,
     string,
     i,
     *,
@@ -198,7 +199,7 @@ def scan_date(
     tz_local=TZ_LOCAL,
 ):
     for (regex, is_time_only) in converters:
-        match: re.Match = regex.match(string, i)
+        match = regex.match(string, i)
         if match is not None:
             end = match.end()
             str_val = string[i:end]
@@ -253,7 +254,6 @@ NUMBER_CONVERTERS = (
 
 
 def scan_number(
-    scanner,
     string,
     i,
     *,
@@ -305,6 +305,7 @@ class Scanner:
         self.stack = []
         # Ensure all bare times use the same today value
         self.today = arrow.now(tz=TZ_LOCAL).floor("day")
+        self.scan = self.make_scanner()
 
     def decode(self, string, *, ignore_extra_data=False):
         """Scan JSONish string and return a Python object.
@@ -326,96 +327,126 @@ class Scanner:
             raise ExtraneousData(string, i)
         return obj
 
-    def scan(
-        self,
-        string,
-        i=0,
-        *,
-        skip_whitespace=skip_whitespace,
-        no_val=object(),
-        default_scan_number=json.scanner.NUMBER_RE.match,
-    ):
-        start = i
-        enable_extras = self.enable_extras
-        i = skip_whitespace(string, i, comments=enable_extras)
+    def make_scanner(self):
+        def stack_pop(
+            string,
+            left,
+            right,
+            right_i,
+            *,
+            stack=self.stack,
+            pop=self.stack.pop,
+        ):
+            if not stack:
+                raise UnmatchedBracket(string, right, right_i)
+            top, left_i = pop()
+            if top != left:
+                raise UnmatchedBracket(string, left, left_i)
 
-        if not string[i:]:
-            if start == 0:
-                return None, len(string)
-            raise ExpectedValue(string, i)
+        def scan(
+            string,
+            i=0,
+            *,
+            # Instance config
+            strict=self.strict,
+            scan_object=self.scan_object,
+            object_converter=self.object_converter,
+            scan_array=self.scan_array,
+            scan_string=self.scan_string,
+            scan_date=self.scan_date,
+            scan_number=self.scan_number,
+            enable_extras=self.enable_extras,
+            fallback_scanner=self.fallback_scanner,
+            skip_whitespace=skip_whitespace,
+            # Instance vars
+            stack=self.stack,
+            stack_push=self.stack.append,
+            stack_pop=stack_pop,
+            today=self.today,
+            # Other locals
+            no_val=object(),
+            default_scan_number=json.scanner.NUMBER_RE.match,
+        ):
+            start = i
+            i = skip_whitespace(string, i, comments=enable_extras)
 
-        val = no_val
-        char = string[i]
+            if not string[i:]:
+                if start == 0:
+                    return None, len(string)
+                raise ExpectedValue(string, i)
 
-        if char == "{":
-            val, i = self.scan_object(
-                self,
-                string,
-                i,
-                converter=self.object_converter,
-                enable_extras=self.enable_extras,
-            )
+            val = no_val
+            char = string[i]
 
-        elif char == "[":
-            val, i = self.scan_array(
-                self,
-                string,
-                i,
-                enable_extras=self.enable_extras,
-            )
+            if char == "{":
+                val, i = scan_object(
+                    string,
+                    i,
+                    scan=scan,
+                    stack=stack,
+                    stack_push=stack_push,
+                    stack_pop=stack_pop,
+                    enable_extras=enable_extras,
+                    converter=object_converter,
+                )
 
-        elif char == '"':
-            val, i = self.scan_string(string, i + 1, self.strict)
+            elif char == "[":
+                val, i = scan_array(
+                    string,
+                    i,
+                    scan=scan,
+                    stack=stack,
+                    stack_push=stack_push,
+                    stack_pop=stack_pop,
+                    enable_extras=enable_extras,
+                )
 
-        elif char == "n" and string[i : i + 4] == "null":
-            val, i = None, i + 4
+            elif char == '"':
+                val, i = scan_string(string, i + 1, strict)
 
-        elif char == "t" and string[i : i + 4] == "true":
-            val, i = True, i + 4
+            elif char == "n" and string[i : i + 4] == "null":
+                val, i = None, i + 4
 
-        elif char == "f" and string[i : i + 5] == "false":
-            val, i = False, i + 5
+            elif char == "t" and string[i : i + 4] == "true":
+                val, i = True, i + 4
 
-        elif enable_extras:
-            if char in "0123456789":
-                result = self.scan_date(self, string, i, today=self.today)
-                if result is not None:
-                    val, i = result
+            elif char == "f" and string[i : i + 5] == "false":
+                val, i = False, i + 5
 
-            if val is no_val and char in "0123456789+-iInNEPπTτ":
-                result = self.scan_number(self, string, i)
-                if result is not None:
-                    val, i = result
+            elif enable_extras:
+                if char in "0123456789":
+                    result = scan_date(string, i, today=today)
+                    if result is not None:
+                        val, i = result
 
-            if val is no_val and self.fallback_scanner:
-                result = self.fallback_scanner(self, string, i)
-                if result is not None:
-                    val, i = result
+                if val is no_val and char in "0123456789+-iInNEPπTτ":
+                    result = scan_number(string, i)
+                    if result is not None:
+                        val, i = result
 
-        elif char in "0123456789-":
-            match = default_scan_number(string, i)
-            if match is not None:
-                integer, fraction, exponent = match.groups()
-                if fraction or exponent:
-                    val = float(f"{integer}{fraction or ''}{exponent or ''}")
-                else:
-                    val = int(integer)
-                i = match.end()
+                if val is no_val and fallback_scanner:
+                    result = fallback_scanner(self, string, i)
+                    if result is not None:
+                        val, i = result
 
-        if val is no_val:
-            raise UnknownToken(string, i, char)
+            elif char in "0123456789-":
+                match = default_scan_number(string, i)
+                if match is not None:
+                    integer, fraction, exponent = match.groups()
+                    if fraction or exponent:
+                        val = float(f"{integer}{fraction or ''}{exponent or ''}")
+                    else:
+                        val = int(integer)
+                    i = match.end()
 
-        if start == 0 and char in "{[" and self.stack:
-            bracket, position = self.stack[-1]
-            raise UnmatchedBracket(string, bracket, position)
+            if val is no_val:
+                raise UnknownToken(string, i, char)
 
-        i = skip_whitespace(string, i, comments=enable_extras)
-        return val, i
+            if start == 0 and char in "{[" and stack:
+                bracket, position = stack[-1]
+                raise UnmatchedBracket(string, bracket, position)
 
-    def _pop(self, string, left, right, right_i):
-        stack = self.stack
-        if not stack:
-            raise UnmatchedBracket(string, right, right_i)
-        top, left_i = stack.pop()
-        if top != left:
-            raise UnmatchedBracket(string, left, left_i)
+            i = skip_whitespace(string, i, comments=enable_extras)
+            return val, i
+
+        return scan
