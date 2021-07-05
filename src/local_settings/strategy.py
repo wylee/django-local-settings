@@ -4,7 +4,7 @@ import os
 from abc import ABCMeta, abstractmethod
 from configparser import NoSectionError, RawConfigParser
 
-from jsonesque import loads, dumps, DecodeError
+from jsonish import Decoder, DecodeError, Encoder
 
 from .exc import SettingsFileNotFoundError, SettingsFileSectionNotFoundError
 from .util import parse_file_name_and_section
@@ -271,9 +271,16 @@ class INIJSONStrategy(INIStrategy):
 
     file_types = ("cfg",)
 
+    def __init__(self):
+        super().__init__()
+        self._decoder = Decoder(strict=True, object_converter=None)
+        self._decode = self._decoder.decode
+        self._encoder = Encoder()
+        self._encode = self._encoder.encode
+
     def decode_value(self, value):
         try:
-            value = loads(value, object_converter=None)
+            value = self._decode(value)
         except DecodeError as exc:
             raise ValueError(
                 f"Could not parse `{value}` as JSON, number, or "
@@ -283,7 +290,7 @@ class INIJSONStrategy(INIStrategy):
         return value
 
     def encode_value(self, value):
-        return dumps(value)
+        return self._encode(value)
 
 
 def get_strategy_types():

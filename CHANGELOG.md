@@ -1,5 +1,9 @@
 # Change Log for django-local-settings
 
+## 2.0a7 - 2021-07-05
+
+In progress...
+
 ## 2.0a6 - 2021-06-24
 
 - Improved support for additional JSON features by writing a whole new

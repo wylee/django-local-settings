@@ -2,7 +2,7 @@ import inspect
 import os
 import sys
 
-from jsonesque import loads
+from jsonish import loads
 
 from .color_printer import color_printer as printer
 from .exc import LocalSettingsError, SettingsFileDidNotPassCheck
@@ -19,7 +19,7 @@ from .util import get_default_file_names
 from .__main__ import make_local_settings  # noqa: exported
 
 
-__version__ = "2.0a6"
+__version__ = "2.0a7"
 
 
 def load_and_check_settings(

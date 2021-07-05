@@ -3,39 +3,38 @@ import math
 import unittest
 from pathlib import Path
 
-import jsonesque.decoder
-import jsonesque.scanner
+import jsonish.decoder
+import jsonish.scanner
 
-from jsonesque import decode
-from jsonesque.exc import (
+from jsonish import decode, decode_file
+from jsonish.exc import (
     ExpectedKey,
     ExpectedValue,
     ExtraneousData,
-    UnexpectedToken,
-    UnknownToken,
+    UnexpectedChar,
+    UnknownChar,
     UnmatchedBracket,
 )
 
 
 def load_tests(loader, tests, ignore):
-    tests.addTests(doctest.DocTestSuite(jsonesque.decoder))
-    tests.addTests(doctest.DocTestSuite(jsonesque.scanner))
+    tests.addTests(doctest.DocTestSuite(jsonish.decoder))
+    tests.addTests(doctest.DocTestSuite(jsonish.scanner))
     return tests
 
 
-class TestJSONEsqueScanner(unittest.TestCase):
-    def decode(self, string, object_converter=None, disable_extras=False):
+class TestJSONishScanner(unittest.TestCase):
+    def decode(self, string, object_converter=None, enable_extras=True):
         return decode(
             string,
             object_converter=object_converter,
-            disable_extras=disable_extras,
+            enable_extras=enable_extras,
         )
 
     def test_empty_string_is_none(self):
         result = self.decode("")
         self.assertIsNone(result)
-        result = self.decode(" ")
-        self.assertIsNone(result)
+        self.assertRaises(ExpectedValue, self.decode, " ")
 
     def test_inf(self):
         self.assertEqual(self.decode("inf"), math.inf)
@@ -90,7 +89,7 @@ class TestJSONEsqueScanner(unittest.TestCase):
             """
         )
         self.assertEqual(self.decode('"//"'), "//")
-        self.assertEqual(self.decode("//{}"), None)
+        self.assertRaises(ExpectedValue, self.decode, "//{}")
         self.assertRaises(ExpectedKey, self.decode, "{//}")
         self.assertRaises(ExpectedValue, self.decode, '{"a": //}')
         self.assertRaises(UnmatchedBracket, self.decode, '{"a": 1//}')
@@ -104,28 +103,24 @@ class TestJSONEsqueScanner(unittest.TestCase):
             "b": 2,
         }
         """
-        self.assertRaises(UnknownToken, self.decode, doc, disable_extras=True)
+        self.assertRaises(UnknownChar, self.decode, doc, enable_extras=False)
 
     def test_trailing_commas_with_extra_features_disabled(self):
-        self.assertRaises(UnexpectedToken, self.decode, "[1, 2,]", disable_extras=True)
+        self.assertRaises(UnexpectedChar, self.decode, "[1, 2,]", enable_extras=False)
 
 
-class TestJSONEsqueAgainstJSONCheckerFiles(unittest.TestCase):
-    def read(self, name):
+class TestJSONishAgainstJSONCheckerFiles(unittest.TestCase):
+    def decode_file(self, name, enable_extras=True):
         file_name = f"{name}.json"
         path = Path(__file__).parent / "json_checker_files" / file_name
-        with path.open() as fp:
-            doc = fp.read()
-        return doc
+        return decode_file(path, enable_extras=enable_extras)
 
     def test_pass1_with_extra_features_disabled(self):
         # Standard JSON shouldn't require any extra features.
-        doc = self.read("pass1")
-        decode(doc, disable_extras=True)
+        self.decode_file("pass1", enable_extras=False)
 
     def test_pass1_with_extra_features_enabled(self):
-        # JSONEsque's extra features are a superset of the standard
+        # JSONish's extra features are a superset of the standard
         # features, so there shouldn't be any issues parsing a standard
         # JSON doc with them turned on.
-        doc = self.read("pass1")
-        decode(doc)
+        self.decode_file("pass1")
