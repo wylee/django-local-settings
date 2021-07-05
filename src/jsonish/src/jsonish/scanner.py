@@ -249,8 +249,8 @@ FLOAT_WITHOUT_EXP = rf"{DECIMAL}\.{DECIMAL}"
 FLOAT = rf"[+-]?({FLOAT_WITH_EXP}|{FLOAT_WITHOUT_EXP})"
 
 # Regex, converter (const or callable), const flag
-# NOTE: The const flag is used to can avoid the function call overhead
-#       of checking `callable(converter)`
+# NOTE: The const flag is used to avoid the function call overhead of
+#       checking `callable(converter)`
 # NOTE: The order of these items matters!
 NUMBER_CONVERTERS = (
     # Constants
@@ -294,7 +294,7 @@ def scan_number(
 
 class Scanner:
 
-    """Scan JSONish string and return Python object."""
+    """Scan JSONish string and return a Python object."""
 
     def __init__(
         self,

@@ -16,6 +16,9 @@ the following:
   - inf, nan, E, π, PI, τ, TAU
   - Infinity, NaN
 
+- Empty input strings will be converted to ``None`` rather than raising
+  an exception.
+
 - Literal (unquoted) dates & times:
   - 2021-06
   - 2021-06-23
@@ -27,19 +30,19 @@ the following:
 .. note:: For dates and times, when a time zone isn't specified, the
     local time zone will be used.
 
-- An object converter can be specified to convert plain Python dicts
-  parsed from JSON into specialized objects; by default, objects will
-  be converted to :class:`scanner.JSONObject`, which allows items to be
-  accessed with either dotted or bracket notation
+- An object converter can be specified to convert JSON objects into a
+  custom type (or types). By default, JSON objects will be converted to
+  :class:`scanner.JSONObject`s, which allows properties to be accessed
+  with either dotted or bracket notation.
 
 - *All* scanning methods can be overridden if some additional
-  customization is required
+  customization is required.
 
 - A prescan method can be provided to handle values before the JSON
-  scanners are applied
+  scanners are applied.
 
 - A fallback scanner method can be provided to handle additional types
-  of values if none of the default scanners are suitable
+  of values if none of the default scanners are suitable.
 
 .. note:: See details below in :func:`decode` for using prescan or a
     fallback scanner.
@@ -94,14 +97,20 @@ def decode(
 ) -> Union[Any, Tuple[Any, int]]:
     """Scan JSONish string and return a Python object.
 
-    The type of the object is determined by the ``object_converter``
-    callable. By default, JSON objects are converted to simple Python
-    namespace objects that allow attributes to be accessed via dotted or
-    bracket notation. These objects can be converted to plain dicts with
+    - JSON object -> Python object (see below)
+    - JSON array -> Python list
+    - JSON string -> Python string
+    - Literal date string (no quotes) -> Python datetime
+    - JSON number -> Python number (int or float)
+    - Empty string -> None
+
+    By default, JSON objects are converted to simple Python namespace
+    objects that allow attributes to be accessed via dotted or bracket
+    notation. These objects can be converted to plain dicts with
     ``dict(obj)`` or you can use ``object_converter=None`` to get back
     plain dicts.
 
-    A different object converter can be passed to customize object
+    A different ``object_converter`` can be passed to customize object
     creation, perhaps based on a type field::
 
         def converter(obj):
@@ -183,7 +192,7 @@ def decode(
       prescanner didn't handle the string and that the regular scanners
       should be tried.
 
-    - The fallback scanner. This is a callable that take a scanner
+    - The fallback scanner. This is a callable that takes a scanner
       instance, the primary scan function, the JSON input string, and
       the current position; it must return a Python value along with
       the next position.
