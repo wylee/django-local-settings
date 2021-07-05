@@ -34,8 +34,7 @@ class TestJSONishScanner(unittest.TestCase):
     def test_empty_string_is_none(self):
         result = self.decode("")
         self.assertIsNone(result)
-        result = self.decode(" ")
-        self.assertIsNone(result)
+        self.assertRaises(ExpectedValue, self.decode, " ")
 
     def test_inf(self):
         self.assertEqual(self.decode("inf"), math.inf)
@@ -90,7 +89,7 @@ class TestJSONishScanner(unittest.TestCase):
             """
         )
         self.assertEqual(self.decode('"//"'), "//")
-        self.assertEqual(self.decode("//{}"), None)
+        self.assertRaises(ExpectedValue, self.decode, "//{}")
         self.assertRaises(ExpectedKey, self.decode, "{//}")
         self.assertRaises(ExpectedValue, self.decode, '{"a": //}')
         self.assertRaises(UnmatchedBracket, self.decode, '{"a": 1//}')

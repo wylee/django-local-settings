@@ -388,12 +388,13 @@ class Scanner:
             no_val=object(),
             default_scan_number=json.scanner.NUMBER_RE.match,
         ) -> Tuple[Any, int]:
+            if start and not string[i:]:
+                return None, i
+
             if string[i : i + 1] in skip_chars:
                 i = skip_whitespace(string, i, comments=enable_extras)
 
             if not string[i:]:
-                if start:
-                    return None, len(string)
                 raise ExpectedValue(string, i)
 
             val = no_val
