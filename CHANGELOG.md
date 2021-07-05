@@ -1,6 +1,6 @@
 # Change Log for django-local-settings
 
-## 2.0 - unreleased
+## 2.0a7 - 2021-07-05
 
 In progress...
 
