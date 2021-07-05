@@ -338,7 +338,7 @@ class Scanner:
 
         """
         self.stack.clear()
-        obj, i = self.scan(string)
+        obj, i = self.scan(string, start=True)
         if ignore_extra_data:
             return obj, i
         elif i != len(string):
@@ -365,6 +365,7 @@ class Scanner:
             string,
             i=0,
             *,
+            start=False,
             # Instance config
             strict=self.strict,
             prescan=self.prescan,
@@ -387,13 +388,11 @@ class Scanner:
             no_val=object(),
             default_scan_number=json.scanner.NUMBER_RE.match,
         ) -> Tuple[Any, int]:
-            start = i
-
             if string[i : i + 1] in skip_chars:
                 i = skip_whitespace(string, i, comments=enable_extras)
 
             if not string[i:]:
-                if start == 0:
+                if start:
                     return None, len(string)
                 raise ExpectedValue(string, i)
 
@@ -406,7 +405,7 @@ class Scanner:
                     val, i = result
                     # XXX: This duplicates code below because of early
                     #      return.
-                    if start == 0 and char in "{[" and stack:
+                    if start and char in "{[" and stack:
                         bracket, position = stack[-1]
                         raise UnmatchedBracket(string, bracket, position)
                     if string[i : i + 1] in skip_chars:
@@ -481,7 +480,7 @@ class Scanner:
             if val is no_val:
                 raise UnknownChar(string, i, char)
 
-            if start == 0 and char in "{[" and stack:
+            if start and char in "{[" and stack:
                 bracket, position = stack[-1]
                 raise UnmatchedBracket(string, bracket, position)
 
