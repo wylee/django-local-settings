@@ -361,7 +361,7 @@ def decode_file(
         path = None
         string = file.read()
     if ini is None:
-        if path is not None and path.suffix in (".cfg", ".inijson"):
+        if path is not None and path.suffix in (".cfg", ".ini", ".inijson"):
             ini = True
         else:
             ini = False
