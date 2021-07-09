@@ -124,3 +124,15 @@ class TestJSONishAgainstJSONCheckerFiles(unittest.TestCase):
         # features, so there shouldn't be any issues parsing a standard
         # JSON doc with them turned on.
         self.decode_file("pass1")
+
+    def test_pass2_with_extra_features_disabled(self):
+        self.decode_file("pass2", enable_extras=False)
+
+    def test_pass2_with_extra_features_enabled(self):
+        self.decode_file("pass2")
+
+    def test_pass3_with_extra_features_disabled(self):
+        self.decode_file("pass3", enable_extras=False)
+
+    def test_pass3_with_extra_features_enabled(self):
+        self.decode_file("pass3")
