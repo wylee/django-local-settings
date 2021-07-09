@@ -1,5 +1,9 @@
 # Change Log for django-local-settings
 
+## 2.0 - unreleased
+
+In progress...
+
 ## 2.0a8 - 2021-07-08
 
 - Fixed return type of `jsonish.scanner.Scanner.make_scan_method()`.
