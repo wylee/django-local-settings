@@ -14,6 +14,7 @@ from jsonish.exc import (
     UnexpectedChar,
     UnknownChar,
     UnmatchedBracket,
+    INIDecodeError,
 )
 
 
@@ -136,3 +137,58 @@ class TestJSONishAgainstJSONCheckerFiles(unittest.TestCase):
 
     def test_pass3_with_extra_features_enabled(self):
         self.decode_file("pass3")
+
+
+class TestDecodeINI(unittest.TestCase):
+    def test_decode_ini(self):
+        config = """\
+[section.one]
+a.b = 1
+x.y = 2
+[section.two]
+a.b = 3
+x.y = 4
+[other]
+a = 1
+b = 2
+[x.(not.split)]
+(x.y) = 1
+(also.not.split).x = 2
+        """
+        result = decode(config, ini=True)
+        self.assertEqual(
+            result,
+            {
+                "section": {
+                    "one": {"a": {"b": 1}, "x": {"y": 2}},
+                    "two": {"a": {"b": 3}, "x": {"y": 4}},
+                },
+                "other": {
+                    "a": 1,
+                    "b": 2,
+                },
+                "x": {
+                    "not.split": {
+                        "x.y": 1,
+                        "also.not.split": {
+                            "x": 2,
+                        },
+                    },
+                },
+            },
+        )
+
+    def test_bad_section_names(self):
+        bad_names = [
+            "[section)]",
+            "[(section]",
+            "[x(yz)]",
+            "[(xy)z]",
+            "[)(abc)]",
+            "[(abc)(]",
+            "[(abc))]",
+            "[((xyz))]",
+        ]
+        for name in bad_names:
+            with self.subTest(name=name):
+                self.assertRaises(INIDecodeError, decode, name, ini=True)

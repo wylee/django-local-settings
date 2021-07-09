@@ -71,3 +71,12 @@ class UnmatchedBracket(DecodeError):
             message = f"Unmatched bracket `{bracket}`"
         super().__init__(string, position, message)
         self.bracket = bracket
+
+
+class INIDecodeError(DecodeError):
+    def __init__(self, string, position, message):
+        super_message = f"{message} at position {position}"
+        super(ValueError, self).__init__(super_message)
+        self.string = string
+        self.message = message
+        self.position = position

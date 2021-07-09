@@ -35,6 +35,8 @@ the following:
   :class:`scanner.JSONObject`s, which allows properties to be accessed
   with either dotted or bracket notation.
 
+- Loading config from INI files with values encoded as JSON.
+
 - *All* scanning methods can be overridden if some additional
   customization is required.
 
@@ -66,10 +68,12 @@ Examples::
     [[]]
 
 """
+from configparser import ConfigParser, ExtendedInterpolation
 from pathlib import Path
 from typing import Any, Callable, Optional, TextIO, Tuple, Union
 
 from . import scanner
+from .exc import INIDecodeError
 from .scanner import Scanner, Scanner as Decoder
 
 
@@ -94,6 +98,7 @@ def decode(
     fallback_scanner: Optional[AltScannerFunc] = None,
     enable_extras: bool = True,
     ignore_extra_data: bool = False,
+    ini=False,
 ) -> Union[Any, Tuple[Any, int]]:
     """Scan JSONish string and return a Python object.
 
@@ -210,7 +215,111 @@ def decode(
         enable_extras=enable_extras,
         fallback_scanner=fallback_scanner,
     )
+    if ini:
+        return decode_ini(string, instance)
     return instance.decode(string, ignore_extra_data=ignore_extra_data)
+
+
+def decode_ini(string, scanner):
+    """Decode INI file with JSONish values.
+
+    INI section and setting names are split on dots to create sub-dicts.
+    For example::
+
+        [section.one]
+        a.b = 1
+
+    will result in the following dict::
+
+        {"section": "one": {"a": {"b": 1}}}
+
+    To disable splitting a name, wrap it in parentheses. For example::
+
+        [(section.one)]
+        (a.b) = 1
+
+    will result in the following dict::
+
+        {"section.one": {"a.b": 1}}
+
+    """
+    result = {}
+    parser = ConfigParser(interpolation=ExtendedInterpolation())
+    parser.optionxform = lambda option: option
+    parser.read_string(string)
+
+    for section_name in parser.sections():
+        obj = result
+        section_path = parse_ini_name(section_name)
+        for segment in section_path[:-1]:
+            if segment not in obj:
+                obj[segment] = {}
+            obj = obj[segment]
+        obj[section_path[-1]] = section_config = {}
+
+        section_items = parser[section_name]
+        for raw_name, raw_value in section_items.items():
+            obj = section_config
+            path = parse_ini_name(raw_name)
+            for segment in path[:-1]:
+                if segment not in obj:
+                    obj[segment] = {}
+                obj = obj[segment]
+            value, _ = scanner.scan(raw_value)
+            obj[path[-1]] = value
+
+    return result
+
+
+def parse_ini_name(name):
+    """Parse section and setting names from INI file."""
+    # NOTE: Groups can't be nested, so this is simplistic
+
+    if "(" not in name and ")" not in name:
+        return name.split(".")
+
+    j = 0
+    segments = []
+    last_right_paren = 0
+
+    while True:
+        i = name.find("(", j)
+        if i == -1:
+            break
+
+        unmatched_i = name.find(")", j)
+        if -1 < unmatched_i < i:
+            raise INIDecodeError(name, unmatched_i, f"Unmatched ) in name '{name}'")
+
+        before = name[j:i]
+        if before:
+            if not before.endswith("."):
+                raise INIDecodeError(name, i - 1, f"Expected dot in name '{name}'")
+            segments.append(before[:-1])
+
+        j = name.find(")", i + 1)
+        if j == -1:
+            raise INIDecodeError(name, i, f"Unmatched ( in name '{name}'")
+        last_right_paren = j
+
+        nested_i = name.find("(", i + 1)
+        if -1 < nested_i < j:
+            raise INIDecodeError(name, nested_i, f"Nested ( in name '{name}'")
+
+        part = name[i + 1 : j]
+        segments.append(part)
+
+    unmatched_i = name.find(")", last_right_paren + 1)
+    if unmatched_i != -1:
+        raise INIDecodeError(name, unmatched_i, f"Unmatched ) in name '{name}'")
+
+    after = name[j + 1 :]
+    if after:
+        if not after.startswith("."):
+            raise INIDecodeError(name, j + 1, f"Expected dot in name '{name}'")
+        segments.append(after[1:])
+
+    return segments
 
 
 def decode_file(
@@ -227,6 +336,7 @@ def decode_file(
     fallback_scanner: Optional[AltScannerFunc] = None,
     enable_extras: bool = True,
     ignore_extra_data: bool = False,
+    ini=None,
 ) -> Union[Any, Tuple[Any, int]]:
     """Read file, scan JSONish string, and return a Python object.
 
@@ -240,13 +350,21 @@ def decode_file(
 
     """
     if isinstance(file, str):
-        with open(file) as fp:
+        path = Path(file)
+        with path.open() as fp:
             string = fp.read()
     elif isinstance(file, Path):
+        path = file
         with file.open() as fp:
             string = fp.read()
     else:
+        path = None
         string = file.read()
+    if ini is None:
+        if path is not None and path.suffix in (".cfg", ".inijson"):
+            ini = True
+        else:
+            ini = False
     return decode(
         string,
         strict=strict,
@@ -260,4 +378,5 @@ def decode_file(
         fallback_scanner=fallback_scanner,
         enable_extras=enable_extras,
         ignore_extra_data=ignore_extra_data,
+        ini=ini,
     )
