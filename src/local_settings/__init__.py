@@ -19,7 +19,7 @@ from .util import get_default_file_names
 from .__main__ import make_local_settings  # noqa: exported
 
 
-__version__ = "2.0.dev0"
+__version__ = "2.0a8"
 
 
 def load_and_check_settings(
