@@ -37,3 +37,9 @@ class JSONObject(types.SimpleNamespace):
 
     def __iter__(self):
         return iter(self.__dict__.items())
+
+    def __repr__(self):
+        return repr(dict(self))
+
+    def __str__(self):
+        return str(dict(self))
