@@ -55,9 +55,9 @@ def main(argv=None):
     if out_file:
         path = pathlib.Path(out_file)
         with path.open("w") as fp:
-            encode_to_file(obj, fp, indent=indent)
+            encode_to_file(obj, fp, indent=indent, enable_extras=enable_extras)
     else:
-        print(encode(obj, indent=indent))
+        print(encode(obj, indent=indent, enable_extras=enable_extras))
 
 
 if __name__ == "__main__":

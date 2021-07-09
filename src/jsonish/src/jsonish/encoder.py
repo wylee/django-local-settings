@@ -6,7 +6,6 @@ This passes through to the stdlib `json` module with handling of
 """
 import datetime
 import json
-import functools
 
 from .obj import JSONObject
 
@@ -14,18 +13,96 @@ from .obj import JSONObject
 __all__ = ["encode", "encode_to_file", "Encoder"]
 
 
-def default(obj):
-    if isinstance(obj, JSONObject):
-        return dict(obj)
-    if isinstance(obj, datetime.datetime):
-        return obj.isoformat()
-    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
-
-
-encode = functools.partial(json.dumps, default=default)
-encode_to_file = functools.partial(json.dump, default=default)
-
-
 class Encoder(json.JSONEncoder):
-    def default(self, obj):
-        return default(obj)
+    def __init__(
+        self,
+        *,
+        skipkeys=False,
+        ensure_ascii=True,
+        check_circular=True,
+        allow_nan=True,
+        sort_keys=False,
+        indent=None,
+        separators=None,
+        default=None,
+        enable_extras=True,
+    ):
+        super().__init__(
+            skipkeys=skipkeys,
+            ensure_ascii=ensure_ascii,
+            check_circular=check_circular,
+            allow_nan=allow_nan,
+            sort_keys=sort_keys,
+            indent=indent,
+            separators=separators,
+            default=default,
+        )
+        self.enable_extras = enable_extras
+
+    def jsonish_default(self, obj):
+        if self.enable_extras:
+            if isinstance(obj, JSONObject):
+                return dict(obj)
+            if isinstance(obj, datetime.datetime):
+                return obj.isoformat()
+        # Raise TypeError
+        return super().default(obj)
+
+
+def encode(
+    obj,
+    *,
+    cls=Encoder,
+    skipkeys=False,
+    ensure_ascii=True,
+    check_circular=True,
+    allow_nan=True,
+    sort_keys=False,
+    indent=None,
+    separators=None,
+    default=None,
+    enable_extras=True,
+):
+    instance = cls(
+        skipkeys=skipkeys,
+        ensure_ascii=ensure_ascii,
+        check_circular=check_circular,
+        allow_nan=allow_nan,
+        sort_keys=sort_keys,
+        indent=indent,
+        separators=separators,
+        default=default,
+        enable_extras=enable_extras,
+    )
+    return instance.encode(obj)
+
+
+def encode_to_file(
+    obj,
+    fp,
+    *,
+    cls=Encoder,
+    skipkeys=False,
+    ensure_ascii=True,
+    check_circular=True,
+    allow_nan=True,
+    sort_keys=False,
+    indent=None,
+    separators=None,
+    default=None,
+    enable_extras=True,
+):
+    instance = cls(
+        skipkeys=skipkeys,
+        ensure_ascii=ensure_ascii,
+        check_circular=check_circular,
+        allow_nan=allow_nan,
+        sort_keys=sort_keys,
+        indent=indent,
+        separators=separators,
+        default=default,
+        enable_extras=enable_extras,
+    )
+    iterable = instance.iterencode(obj)
+    for chunk in iterable:
+        fp.write(chunk)
