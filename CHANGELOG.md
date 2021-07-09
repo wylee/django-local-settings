@@ -1,8 +1,18 @@
 # Change Log for django-local-settings
 
+## 2.0a8 - 2021-07-08
+
+- Fixed return type of `jsonish.scanner.Scanner.make_scan_method()`.
+- Add changelog for 2.0a7
+
 ## 2.0a7 - 2021-07-05
 
-In progress...
+- Improved JSON decoder.
+- Changed `INIJSONStrategy` to use a single JSON decoder instance rather
+  than repeatedly recreating it for *every* setting.
+- Improved interpolation:
+  - Empty `{{ }}` groups will now raise an error
+  - Unmatched closing `}}` will now raise an error
 
 ## 2.0a6 - 2021-06-24
 

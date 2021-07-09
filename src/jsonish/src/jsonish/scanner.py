@@ -345,7 +345,7 @@ class Scanner:
             raise ExtraneousData(string, i)
         return obj
 
-    def make_scan_method(self) -> Callable[[...], Tuple[Any, int]]:
+    def make_scan_method(self) -> Callable[[str, int], Tuple[Any, int]]:
         def stack_pop(
             string,
             left,
