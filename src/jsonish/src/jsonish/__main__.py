@@ -22,6 +22,7 @@ def main(argv=None):
     )
 
     parser.add_argument("-o", "--out-file", help="Write decoded JSON to file")
+
     parser.add_argument(
         "-i",
         "--indent",
@@ -30,19 +31,33 @@ def main(argv=None):
         help="Pretty print with specified indent level",
     )
 
+    parser.add_argument(
+        "-d",
+        "--disable-extras",
+        dest="enable_extras",
+        action="store_false",
+        default=True,
+    )
+
     args = parser.parse_args(argv)
+    json = args.json
+    file = args.file
+    out_file = args.out_file
+    ini = args.ini
+    indent = args.indent
+    enable_extras = args.enable_extras
 
-    if args.json:
-        obj = decode(args.json, ini=args.ini)
-    elif args.file:
-        obj = decode_file(args.file, ini=args.ini)
+    if json:
+        obj = decode(json, enable_extras=enable_extras, ini=ini)
+    elif file:
+        obj = decode_file(file, enable_extras=enable_extras, ini=ini)
 
-    if args.out_file:
-        path = pathlib.Path(args.out_file)
+    if out_file:
+        path = pathlib.Path(out_file)
         with path.open("w") as fp:
-            encode_to_file(obj, fp, indent=args.indent)
+            encode_to_file(obj, fp, indent=indent)
     else:
-        print(encode(obj, indent=args.indent))
+        print(encode(obj, indent=indent))
 
 
 if __name__ == "__main__":
