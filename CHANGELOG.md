@@ -1,8 +1,12 @@
 # Change Log for django-local-settings
 
-## 2.0 - unreleased
+## 2.0a9 - 2021-11-03
 
-In progress...
+- Dropped official support for Python 3.6 since it will be EOL at the
+  end of December 2021
+- Added support for Python 3.10
+- Split out the `jsonish` package into a new `jsun` package, which is
+  installable from PyPI
 
 ## 2.0a8 - 2021-07-08
 
