@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "django-local-settings"
-version = "2.0a8"
+version = "2.0a9"
 description = "Define Django settings in config files and/or via environment variables"
 authors = ["Wyatt Baldwin <self@wyattbaldwin.com>"]
 license = "MIT"
@@ -10,7 +10,6 @@ keywords = ["django", "settings", "local", "env", "environment"]
 
 packages = [
     { include = "local_settings", from = "src" },
-    { include = "jsonish", from = "src/jsonish/src" },
 ]
 
 include = [
@@ -21,8 +20,8 @@ include = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.6"
-arrow = "^1.1.0"
+python = "^3.7"
+jsun = "^1.0a1"
 Django = ">=2.2"
 python-dotenv = "^0.17.1"
 

@@ -13,7 +13,8 @@
 - Additional number syntaxes are now supported (any valid Python `int`
   or `float`)
 - Support for Python 3.5 and below was dropped; supporting only 3.6 and
-  up is much simpler
+  up is much simpler (officially, only 3.7 and up are supported, but
+  there shouldn't be any issues on 3.6 for the time being)
 - Support for old, unsupported versions of Django was dropped
 
 This package attempts to solve the problem of handling local settings in
@@ -87,7 +88,7 @@ and interpolated, etc.
   `configparser`)
 - Includes a script to easily generate local settings files for
   different environments
-- Supports Python 3.6 - 3.9
+- Supports Python 3.7 - 3.10
 - Supports Django 2.2 - 3.2
 
 ## Basic usage

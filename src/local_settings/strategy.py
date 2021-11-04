@@ -4,7 +4,7 @@ import os
 from abc import ABCMeta, abstractmethod
 from configparser import NoSectionError, RawConfigParser
 
-from jsonish import Decoder, DecodeError, Encoder
+from jsun import Decoder, DecodeError, Encoder
 
 from .exc import SettingsFileNotFoundError, SettingsFileSectionNotFoundError
 from .util import parse_file_name_and_section

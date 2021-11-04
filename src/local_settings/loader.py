@@ -1,5 +1,5 @@
 import os
-from collections import Mapping, MutableMapping, MutableSequence, Sequence
+from collections.abc import Mapping, MutableMapping, MutableSequence, Sequence
 
 from django.utils.module_loading import import_string
 
