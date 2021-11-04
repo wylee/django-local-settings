@@ -1,5 +1,5 @@
 import re
-from collections import Mapping, Sequence
+from collections.abc import Mapping, Sequence
 
 from .util import NO_DEFAULT, NO_DEFAULT as PLACEHOLDER
 

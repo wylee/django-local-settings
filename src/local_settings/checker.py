@@ -1,5 +1,5 @@
 import sys
-from collections import Mapping, Sequence
+from collections.abc import Mapping, Sequence
 
 from .base import Base
 from .color_printer import color_printer as printer
