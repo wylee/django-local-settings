@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "django-local-settings"
-version = "2.0a9"
+version = "2.0.dev0"
 description = "Define Django settings in config files and/or via environment variables"
 authors = ["Wyatt Baldwin <self@wyattbaldwin.com>"]
 license = "MIT"
