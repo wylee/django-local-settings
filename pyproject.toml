@@ -10,7 +10,6 @@ keywords = ["django", "settings", "local", "env", "environment"]
 
 packages = [
     { include = "local_settings", from = "src" },
-    { include = "jsonish", from = "src/jsonish/src" },
 ]
 
 include = [
@@ -21,9 +20,8 @@ include = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.6"
-arrow = "^1.1.0"
 python = "^3.7"
+jsun = "^1.0a1"
 Django = ">=2.2"
 python-dotenv = "^0.17.1"
 
@@ -38,7 +36,6 @@ tox = "*"
 
 [tool.poetry.scripts]
 make-local-settings = "local_settings:make_local_settings"
-jsonish = "jsonish.__main__:main"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

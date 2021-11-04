@@ -1,4 +1,4 @@
-from jsonish import dumps
+from jsun import dumps
 
 from .exc import NoDefaultError, NoValueError, DefaultValueError
 from .util import NO_DEFAULT
