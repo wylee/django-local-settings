@@ -89,7 +89,7 @@ and interpolated, etc.
 - Includes a script to easily generate local settings files for
   different environments
 - Supports Python 3.7 - 3.10
-- Supports Django 2.2 - 3.2
+- Supports Django 2.0 - 4.1
 
 ## Basic usage
 
