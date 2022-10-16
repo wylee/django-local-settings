@@ -4,8 +4,6 @@ import os
 import sys
 import textwrap
 
-from setuptools import find_packages
-
 from .color_printer import color_printer as printer
 from .loader import Loader
 from .strategy import get_file_type_map, guess_strategy_type
@@ -95,17 +93,12 @@ def make_local_settings(argv=None):
         strategy = strategy_type()
 
     if args.base_settings_module is None:
-        package = find_packages()[0]
-        path = os.path.join(os.getcwd(), package, "settings.py")
-        if os.path.exists(path):
-            base_settings_module = f"{package}.settings"
-            printer.print_info(
-                f"Using {args.base_settings_module} as base settings module"
-            )
-        else:
-            parser.error(
-                "Could not guess which base settings module to use; specify with -b"
-            )
+        # TODO: This is very simplistic and only works when the current
+        #       directory name matches the package name. Perhaps warn
+        #       if the module can't be imported and recommend using -b
+        #       option.
+        package = os.path.basename(os.getcwd())
+        base_settings_module = f"{package}.settings"
     else:
         base_settings_module = args.base_settings_module
 
