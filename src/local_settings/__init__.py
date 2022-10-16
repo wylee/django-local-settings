@@ -82,10 +82,10 @@ def load_and_check_settings(
     error when ``env_only=True``.
 
     ``dotenv_file`` can be used to specify a .env file for loading
-    local settings configuration environment variables. This can be the
-    same .env file used for local settings or a different one. It can be
-    specified as an absolute, relative (to ``base_path``), or asset
-    path.
+    local settings configuration environment variables (i.e., those
+    prefixed with ``LOCAL_SETTINGS_CONFIG_``. This can be the same .env
+    file used for local settings or a different one. It can be specified
+    as an absolute, relative (to ``base_path``), or asset path.
 
     .. note:: When setting flags via environment variables, use a JSON
         value like 'true', '1', 'false', or '0'.
@@ -109,8 +109,7 @@ def load_and_check_settings(
         # continue.
         if not quiet:
             printer.print_warning("\nAborted loading/checking of local settings")
-        # XXX: It seems wonky sys.exit() here; seems like the exception
-        #      should just be re-raised.
+        # XXX: It seems wonky to use sys.exit() here.
         sys.exit(0)
     if loader.section:
         file_name = f"{loader.file_name}#{loader.section}"
