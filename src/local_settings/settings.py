@@ -363,9 +363,12 @@ class Settings(dict, DottedAccessMixin):
         # This is only invoked if the named attribute isn't found as an
         # instance or class attribute of the Settings instance. In other
         # words, this will only be called for settings stored in the
-        # instance's internal dict storage. For methods such as `get`,
-        # this won't be called.
-        return self[name]
+        # instance's internal dict storage. For dict methods such as
+        # `get()`, `setdefault()`, etc, this won't be called.
+        try:
+            return self[name]
+        except KeyError:
+            raise AttributeError(name)
 
     def __setattr__(self, name, value):
         self[name] = value
